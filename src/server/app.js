@@ -51,6 +51,51 @@ export function createServer() {
     }
   });
 
+  // 2.1 Consulta e alteração da configuração ativa (seleção de modelo pelo dashboard)
+  app.get('/api/config', (req, res) => {
+    res.json(configManager.get());
+  });
+
+  app.post('/api/config', async (req, res) => {
+    try {
+      const { defaultModel } = req.body;
+      let newAliases = {};
+
+      if (defaultModel === 'claude-opus-4-6-thinking') {
+        newAliases = {
+          'claude-3-7-sonnet-latest': 'claude-opus-4-6-thinking',
+          'claude-3-7-sonnet': 'claude-opus-4-6-thinking',
+          'claude-3-5-sonnet': 'claude-sonnet-4-6'
+        };
+      } else if (defaultModel === 'gemini-3.1-pro-high') {
+        newAliases = {
+          'claude-3-7-sonnet-latest': 'gemini-3.1-pro-high',
+          'claude-3-7-sonnet': 'gemini-3.1-pro-high',
+          'claude-3-5-sonnet': 'gemini-3.1-pro-high'
+        };
+      } else if (defaultModel === 'gemini-3-flash-agent') {
+        newAliases = {
+          'claude-3-7-sonnet-latest': 'gemini-3-flash-agent',
+          'claude-3-7-sonnet': 'gemini-3-flash-agent',
+          'claude-3-5-sonnet': 'gemini-3-flash-agent'
+        };
+      }
+
+      const updated = await configManager.update({
+        defaultModel,
+        modelAliases: {
+          ...configManager.get().modelAliases,
+          ...newAliases
+        }
+      });
+
+      console.log(chalk.magenta(`[Config] Modelo padrão alterado pelo Dashboard para: ${defaultModel}`));
+      res.json({ success: true, config: updated });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // 3. Catálogo de Modelos (para validação do Claude Code, Cursor, Aider)
   app.get('/v1/models', (req, res) => {
     const config = configManager.get();

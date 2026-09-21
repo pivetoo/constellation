@@ -10,7 +10,8 @@
   "scripts": {
     "start": "node bin/constellation.js serve",
     "login": "node bin/constellation.js login",
-    "accounts": "node bin/constellation.js accounts"
+    "accounts": "node bin/constellation.js accounts",
+    "claude": "node bin/constellation.js claude"
   },
   "keywords": [
     "gemini",

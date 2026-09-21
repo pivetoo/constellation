@@ -194,4 +194,43 @@ program
     }
   });
 
+// 6. Comando CLAUDE (inicia o Claude Code já configurado com as variáveis do Constellation)
+program
+  .command('claude [claudeArgs...]')
+  .description('Executar o Claude Code diretamente conectado ao Constellation (sem precisar de $env)')
+  .allowUnknownOption(true)
+  .action(async (claudeArgs = []) => {
+    const config = await configManager.load();
+    const port = config.port || 6012;
+    const { spawn } = await import('child_process');
+
+    console.log(chalk.cyan(`\n🌌 Iniciando Claude Code conectado ao Constellation (porta ${port})...\n`));
+
+    const env = {
+      ...process.env,
+      ANTHROPIC_BASE_URL: `http://localhost:${port}/v1`,
+      ANTHROPIC_API_KEY: 'sk-anything'
+    };
+
+    const claudeProcess = spawn('claude', claudeArgs, {
+      stdio: 'inherit',
+      shell: true,
+      env
+    });
+
+    claudeProcess.on('error', (err) => {
+      if (err.code === 'ENOENT') {
+        console.error(chalk.red('\n[Erro] Claude Code não encontrado no sistema.'));
+        console.error(chalk.yellow('Instale-o com: npm install -g @anthropic-ai/claude-code\n'));
+      } else {
+        console.error(chalk.red(`\n[Erro ao iniciar Claude Code] ${err.message}\n`));
+      }
+    });
+
+    claudeProcess.on('exit', (code) => {
+      process.exit(code ?? 0);
+    });
+  });
+
 program.parse(process.argv);
+

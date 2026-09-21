@@ -156,6 +156,28 @@
       text-align: right;
     }
 
+    .model-btn {
+      background: #1c212e;
+      border: 1px solid #2d3548;
+      color: var(--text);
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+    .model-btn:hover {
+      border-color: var(--accent);
+      background: #242b3d;
+    }
+    .model-btn.active {
+      background: #1f3a5f;
+      border-color: var(--accent);
+      color: #fff;
+      box-shadow: 0 0 10px rgba(88, 166, 255, 0.3);
+    }
+
     footer {
       text-align: center;
       margin-top: 40px;
@@ -177,8 +199,36 @@
       <div class="badge" id="refresh-indicator">Atualizando ao vivo (15s)...</div>
     </header>
 
+    <!-- Seletor de Modelo Ativo -->
+    <div class="quick-setup" style="margin-bottom: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="margin: 0;">🎯 Modelo Ativo para o Claude Code:</h3>
+        <span id="active-model-badge" class="badge" style="background: #238636; color: #fff;">Carregando...</span>
+      </div>
+      <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <button onclick="setModel('gemini-3.1-pro-high')" id="btn-gemini-pro" class="model-btn active">
+          🧠 Gemini 3.1 Pro (Recomendado)
+        </button>
+        <button onclick="setModel('claude-opus-4-6-thinking')" id="btn-claude-opus" class="model-btn">
+          🎭 Claude Opus 4.6 Thinking
+        </button>
+        <button onclick="setModel('gemini-3-flash-agent')" id="btn-gemini-flash" class="model-btn">
+          ⚡ Gemini 3 Flash (Mais Rápido)
+        </button>
+      </div>
+    </div>
+
     <div class="quick-setup">
-      <h3>🚀 Como conectar com o Claude Code:</h3>
+      <h3>🚀 Como abrir o Claude Code sem digitar variáveis de ambiente:</h3>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">
+        Opção 1 (Atalho do Constellation):
+      </p>
+      <div class="code-block" style="margin-bottom: 12px;">
+        node bin/constellation.js claude
+      </div>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">
+        Opção 2 (Comando tradicional):
+      </p>
       <div class="code-block">
         $env:ANTHROPIC_BASE_URL="http://localhost:6012/v1"; $env:ANTHROPIC_API_KEY="sk-anything"; claude
       </div>
@@ -303,6 +353,58 @@
       document.getElementById('stat-cooldown-accounts').innerText = cooldownCount;
     }
 
+    async function loadConfig() {
+      try {
+        const res = await fetch('/api/config');
+        const config = await res.json();
+        updateModelUI(config.defaultModel);
+      } catch (err) {
+        console.error('Falha ao carregar configuração:', err);
+      }
+    }
+
+    function updateModelUI(activeModel) {
+      const badge = document.getElementById('active-model-badge');
+      const btnPro = document.getElementById('btn-gemini-pro');
+      const btnOpus = document.getElementById('btn-claude-opus');
+      const btnFlash = document.getElementById('btn-gemini-flash');
+
+      btnPro.classList.remove('active');
+      btnOpus.classList.remove('active');
+      btnFlash.classList.remove('active');
+
+      if (activeModel.includes('claude-opus')) {
+        badge.innerText = 'Claude Opus 4.6 Thinking';
+        badge.style.background = '#8957e5';
+        btnOpus.classList.add('active');
+      } else if (activeModel.includes('flash')) {
+        badge.innerText = 'Gemini 3 Flash';
+        badge.style.background = '#d29922';
+        btnFlash.classList.add('active');
+      } else {
+        badge.innerText = 'Gemini 3.1 Pro';
+        badge.style.background = '#238636';
+        btnPro.classList.add('active');
+      }
+    }
+
+    async function setModel(modelName) {
+      try {
+        const res = await fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ defaultModel: modelName })
+        });
+        const data = await res.json();
+        if (data.success) {
+          updateModelUI(modelName);
+        }
+      } catch (err) {
+        alert('Erro ao alterar modelo: ' + err.message);
+      }
+    }
+
+    loadConfig();
     loadStatus();
     setInterval(loadStatus, 15000);
   </script>
