@@ -265,6 +265,9 @@
         </div>
       </div>
       <div style="display: flex; align-items: center; gap: 12px;">
+        <button class="add-account-btn" style="background: #1f6feb; border-color: #388bfd;" onclick="forceRefreshQuota()">
+          🔄 Atualizar Cotas
+        </button>
         <button class="add-account-btn" onclick="openLoginPopup()">
           ➕ Conectar Conta Google
         </button>
@@ -340,14 +343,23 @@
   </div>
 
   <script>
-    async function loadStatus() {
+    async function loadStatus(force = false) {
       try {
-        const res = await fetch('/api/status');
+        const url = force ? '/api/status?refresh=true' : '/api/status';
+        const res = await fetch(url);
         const data = await res.json();
         renderDashboard(data);
       } catch (err) {
         console.error('Falha ao atualizar dashboard:', err);
       }
+    }
+
+    async function forceRefreshQuota() {
+      const ind = document.getElementById('refresh-indicator');
+      if (ind) ind.innerText = 'Consultando Google API...';
+      await loadStatus(true);
+      if (ind) ind.innerText = 'Atualizado agora mesmo!';
+      setTimeout(() => { if (ind) ind.innerText = 'Atualizando ao vivo (15s)...'; }, 3000);
     }
 
     function renderDashboard(data) {
@@ -405,7 +417,10 @@
               <div class="progress-bar-bg">
                 <div class="progress-bar-fill ${fillClass}" style="width: ${rem}%;"></div>
               </div>
-              ${q.resetTimeFormatted ? `<div class="reset-hint">Reset às ${q.resetTimeFormatted}</div>` : ''}
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                <span style="font-size: 10px; color: #8b949e;">Bloco 5h</span>
+                ${q.resetTimeFormatted ? `<span class="reset-hint" style="margin-top:0;">Reset às ${q.resetTimeFormatted}</span>` : ''}
+              </div>
             </div>
           `;
         }).join('');
@@ -414,7 +429,12 @@
         let pillText = 'Pronta';
         let pillClass = 'ready';
 
-        if (isAnyCooldown) {
+        if (acc.needsVerification) {
+          cardClass = 'cooldown';
+          pillText = 'Requer Verificação';
+          pillClass = 'exhausted';
+          cooldownCount++;
+        } else if (isAnyCooldown) {
           cardClass = 'cooldown';
           pillText = 'Cooldown';
           pillClass = 'cooldown';
@@ -428,6 +448,42 @@
           readyCount++;
         }
 
+        let verificationBanner = '';
+        if (acc.needsVerification) {
+          verificationBanner = `
+            <div style="background: rgba(248, 81, 73, 0.15); border: 1px solid #f85149; border-radius: 6px; padding: 8px 12px; margin-top: 12px; font-size: 12px; color: #f85149;">
+              ⚠️ <strong>Verificação Necessária</strong><br>
+              Acesse sua conta Google no navegador para confirmar o login de segurança e liberar a API.
+            </div>
+          `;
+        }
+
+        let summaryHtml = '';
+        if (acc.summary && Array.isArray(acc.summary)) {
+          const geminiGroup = acc.summary.find(g => g.displayName?.toLowerCase().includes('gemini'));
+          const claudeGroup = acc.summary.find(g => g.displayName?.toLowerCase().includes('claude') || g.displayName?.toLowerCase().includes('3p'));
+          
+          const geminiWeekly = geminiGroup?.buckets?.find(b => b.window === 'weekly');
+          const claudeWeekly = claudeGroup?.buckets?.find(b => b.window === 'weekly');
+
+          summaryHtml = `
+            <div style="background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 10px; margin-top: 14px; font-size: 11px;">
+              <div style="font-weight: 600; color: #58a6ff; margin-bottom: 6px;">🗓️ Limite Semanal (Google One)</div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                <span style="color: var(--text-muted);">Gemini Semanal:</span>
+                <strong style="color: #fff;">${geminiWeekly ? geminiWeekly.remainingPercent + '%' : '100%'} restante</strong>
+              </div>
+              ${geminiWeekly?.description ? `<div style="color: #8b949e; font-size: 10px; margin-bottom: 6px;">${geminiWeekly.description}</div>` : ''}
+              ${claudeWeekly ? `
+                <div style="display: flex; justify-content: space-between; border-top: 1px dashed #30363d; padding-top: 4px; margin-top: 4px;">
+                  <span style="color: var(--text-muted);">Claude / GPT Semanal:</span>
+                  <strong style="color: #fff;">${claudeWeekly.remainingPercent}% restante</strong>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }
+
         return `
           <div class="account-card ${cardClass}">
             <div class="card-header">
@@ -437,7 +493,9 @@
                 <button class="remove-btn" title="Desconectar conta do pool" onclick="removeAccount('${acc.id}', '${acc.email}')">🗑️</button>
               </div>
             </div>
+            ${verificationBanner}
             ${modelsHtml}
+            ${summaryHtml}
           </div>
         `;
       }).join('');

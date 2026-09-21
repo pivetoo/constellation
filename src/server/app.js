@@ -46,7 +46,8 @@ export function createServer() {
   // 2. Status em JSON das contas e cotas
   app.get('/api/status', async (req, res) => {
     try {
-      const accountsStatus = await accountPool.getPoolStatus();
+      const forceRefresh = req.query.refresh === 'true' || req.query.refresh === '1';
+      const accountsStatus = await accountPool.getPoolStatus(forceRefresh);
       res.json({ accounts: accountsStatus });
     } catch (err) {
       res.status(500).json({ error: err.message });

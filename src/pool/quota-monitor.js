@@ -5,27 +5,33 @@ import { API_ENDPOINTS, ANTIGRAVITY_HEADERS } from '../constants.js';
 
 export class QuotaMonitor {
   /**
-   * Consulta a cota de todos os modelos disponíveis para um determinado token
+   * Consulta a cota de todos os modelos disponíveis e o resumo de grupos (Semanal e 5h)
    */
   async fetchAccountQuota(accessToken, projectId = API_ENDPOINTS.DEFAULT_PROJECT_ID) {
     try {
-      const endpoint = API_ENDPOINTS.PROD_CLOUD_CODE || API_ENDPOINTS.CLOUD_CODE;
+      const endpoint = API_ENDPOINTS.CLOUD_CODE || 'https://daily-cloudcode-pa.sandbox.googleapis.com';
+      const headers = {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        ...ANTIGRAVITY_HEADERS.getHeaders()
+      };
+
+      // 1. Consulta modelos disponíveis e suas cotas individuais (janela de 5h)
       const response = await fetch(`${endpoint}/v1internal:fetchAvailableModels`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-          ...ANTIGRAVITY_HEADERS.getHeaders()
-        },
+        headers,
         body: JSON.stringify({ project: projectId })
       });
 
       if (!response.ok) {
         const errorText = await response.text();
+        const isValidationReq = response.status === 403 && (errorText.includes('VALIDATION_REQUIRED') || errorText.includes('Verify your account'));
         return {
           success: false,
+          needsVerification: isValidationReq,
           error: `HTTP ${response.status}: ${errorText}`,
-          models: {}
+          models: {},
+          summary: null
         };
       }
 
@@ -70,15 +76,44 @@ export class QuotaMonitor {
         result['gemini-3-flash'] = { ...flashRef };
       }
 
+      // 2. Consulta resumo agrupado oficial (Semanal + 5 Horas)
+      let quotaSummary = null;
+      try {
+        const summaryRes = await fetch(`${endpoint}/v1internal:retrieveUserQuotaSummary`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ project: projectId })
+        });
+        if (summaryRes.ok) {
+          const summaryData = await summaryRes.json();
+          quotaSummary = (summaryData.groups || []).map(group => ({
+            displayName: group.displayName,
+            description: group.description,
+            buckets: (group.buckets || []).map(b => ({
+              bucketId: b.bucketId,
+              displayName: b.displayName,
+              window: b.window,
+              description: b.description,
+              remainingFraction: b.remainingFraction,
+              remainingPercent: Math.round(Number(b.remainingFraction ?? 1.0) * 100),
+              resetTime: b.resetTime,
+              resetTimeFormatted: b.resetTime ? new Date(b.resetTime).toLocaleString('pt-BR') : ''
+            }))
+          }));
+        }
+      } catch {}
+
       return {
         success: true,
-        models: result
+        models: result,
+        summary: quotaSummary
       };
     } catch (err) {
       return {
         success: false,
         error: err.message,
-        models: {}
+        models: {},
+        summary: null
       };
     }
   }

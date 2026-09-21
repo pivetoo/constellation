@@ -64,12 +64,27 @@ export class AccountPool {
     if (res.success) {
       this.quotaCache.set(account.id, {
         timestamp: Date.now(),
-        models: res.models
+        models: res.models,
+        summary: res.summary,
+        needsVerification: false
       });
       return res.models;
     }
 
+    if (res.needsVerification) {
+      this.quotaCache.set(account.id, {
+        timestamp: Date.now(),
+        models: cached ? cached.models : {},
+        summary: null,
+        needsVerification: true
+      });
+    }
+
     return cached ? cached.models : {};
+  }
+
+  getAccountData(accountId) {
+    return this.quotaCache.get(accountId) || {};
   }
 
   /**
@@ -83,6 +98,7 @@ export class AccountPool {
     for (let i = 0; i < this.accounts.length; i++) {
       const acc = this.accounts[i];
       const quotas = await this.getAccountQuota(acc, forceRefreshQuota);
+      const accData = this.getAccountData(acc.id);
       const modelsStatus = {};
 
       for (const [mName, qInfo] of Object.entries(quotas)) {
@@ -101,6 +117,8 @@ export class AccountPool {
         id: acc.id,
         email: acc.email || `Conta #${i + 1}`,
         name: acc.name || '',
+        needsVerification: Boolean(accData.needsVerification),
+        summary: accData.summary || null,
         models: modelsStatus
       });
     }
