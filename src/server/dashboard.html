@@ -375,6 +375,72 @@
       border-color: rgba(248, 81, 73, 0.3);
     }
 
+    /* Modal de Instruções */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s ease, visibility 0.2s ease;
+      padding: 20px;
+    }
+    .modal-overlay.open {
+      opacity: 1;
+      visibility: visible;
+    }
+    .modal-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      max-width: 620px;
+      width: 100%;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      transform: scale(0.95);
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease, border-color 0.2s ease;
+      overflow: hidden;
+    }
+    .modal-overlay.open .modal-card {
+      transform: scale(1);
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .modal-header h3 {
+      font-size: 16px;
+      color: var(--accent);
+      margin: 0;
+    }
+    .modal-close-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: all 0.15s ease;
+    }
+    .modal-close-btn:hover {
+      background: var(--btn-hover-bg);
+      color: var(--text-heading);
+    }
+    .modal-body {
+      padding: 20px;
+    }
+
     footer {
       text-align: center;
       margin-top: 40px;
@@ -394,6 +460,9 @@
         </div>
       </div>
       <div style="display: flex; align-items: center; gap: 10px;">
+        <button class="theme-icon-btn" id="help-modal-btn" onclick="openHelpModal()" title="Como abrir o Claude Code (Comandos e Instruções)">
+          🚀
+        </button>
         <button class="theme-icon-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Alternar tema White / Dark">
           ☀️
         </button>
@@ -425,25 +494,6 @@
       </div>
     </div>
 
-    <div class="quick-setup">
-      <h3>🚀 Como abrir o Claude Code sem digitar variáveis de ambiente:</h3>
-      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">
-        Opção 1 (Comando Global de 1 palavra - Funciona em qualquer diretório):
-      </p>
-      <div class="code-wrapper" style="margin-bottom: 14px;">
-        <div class="code-block" id="code-opt1">cclaude</div>
-        <button class="copy-btn" onclick="copyCode('code-opt1', this)">📋 Copiar</button>
-      </div>
-
-      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">
-        Opção 2 (Comando tradicional com $env):
-      </p>
-      <div class="code-wrapper">
-        <div class="code-block" id="code-opt2">$env:ANTHROPIC_BASE_URL="http://localhost:6012/v1"; $env:ANTHROPIC_API_KEY="sk-anything"; claude</div>
-        <button class="copy-btn" onclick="copyCode('code-opt2', this)">📋 Copiar</button>
-      </div>
-    </div>
-
     <div class="stats-bar">
       <div class="stat-card">
         <div class="label">Total de Contas</div>
@@ -468,6 +518,33 @@
     <footer>
       Constellation — Cota infinita e rotação inteligente para Gemini Pro & Flash.
     </footer>
+  </div>
+
+  <!-- Modal de Ajuda / Inicialização do Claude Code -->
+  <div class="modal-overlay" id="help-modal" onclick="handleModalOverlayClick(event)">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>🚀 Como abrir o Claude Code sem digitar variáveis</h3>
+        <button class="modal-close-btn" onclick="closeHelpModal()" title="Fechar">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">
+          Opção 1 (Comando Global de 1 palavra - Funciona em qualquer diretório):
+        </p>
+        <div class="code-wrapper" style="margin-bottom: 16px;">
+          <div class="code-block" id="modal-code-opt1">cclaude</div>
+          <button class="copy-btn" onclick="copyCode('modal-code-opt1', this)">📋 Copiar</button>
+        </div>
+
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">
+          Opção 2 (Comando tradicional com $env):
+        </p>
+        <div class="code-wrapper">
+          <div class="code-block" id="modal-code-opt2">$env:ANTHROPIC_BASE_URL="http://localhost:6012/v1"; $env:ANTHROPIC_API_KEY="sk-anything"; claude</div>
+          <button class="copy-btn" onclick="copyCode('modal-code-opt2', this)">📋 Copiar</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -754,6 +831,28 @@
         alert('Erro ao remover conta: ' + err.message);
       }
     }
+
+    function openHelpModal() {
+      const modal = document.getElementById('help-modal');
+      if (modal) modal.classList.add('open');
+    }
+
+    function closeHelpModal() {
+      const modal = document.getElementById('help-modal');
+      if (modal) modal.classList.remove('open');
+    }
+
+    function handleModalOverlayClick(e) {
+      if (e.target.id === 'help-modal') {
+        closeHelpModal();
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeHelpModal();
+      }
+    });
 
     loadConfig();
     loadStatus();
