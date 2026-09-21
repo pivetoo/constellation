@@ -234,15 +234,21 @@ program
 
     console.log(chalk.cyan(`\n🌌 Iniciando Claude Code conectado ao Constellation (porta ${port})...\n`));
 
+    const os = await import('os');
+    const path = await import('path');
+    const constellationClaudeConfigDir = path.join(os.homedir(), '.claude-constellation');
+
     const env = {
       ...process.env,
-      ANTHROPIC_BASE_URL: `http://localhost:${port}/v1`,
-      ANTHROPIC_API_KEY: 'sk-anything'
+      CLAUDE_CONFIG_DIR: constellationClaudeConfigDir,
+      ANTHROPIC_BASE_URL: `http://localhost:${port}`,
+      ANTHROPIC_API_KEY: 'sk-constellation'
     };
 
-    const claudeProcess = spawn('claude', claudeArgs, {
+    const claudeBin = process.platform === 'win32' ? 'claude.exe' : 'claude';
+    const claudeProcess = spawn(claudeBin, claudeArgs, {
       stdio: 'inherit',
-      shell: true,
+      shell: false,
       env
     });
 

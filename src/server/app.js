@@ -147,7 +147,7 @@ export function createServer() {
     'gemini-flash'
   ];
 
-  app.get('/v1/models/:model', (req, res) => {
+  app.get(['/v1/models/:model', '/v1/v1/models/:model', '/models/:model'], (req, res) => {
     res.json({
       id: req.params.model,
       object: 'model',
@@ -156,7 +156,7 @@ export function createServer() {
     });
   });
 
-  app.get('/v1/models', (req, res) => {
+  app.get(['/v1/models', '/v1/v1/models', '/models'], (req, res) => {
     res.json({
       object: 'list',
       data: allKnownModels.map(id => ({
@@ -169,19 +169,34 @@ export function createServer() {
   });
 
   // 4. Endpoint Anthropic (/v1/messages) para CLAUDE CODE
-  app.post('/v1/messages', async (req, res) => {
+  app.post(['/v1/messages', '/v1/v1/messages', '/messages'], async (req, res) => {
     try {
       const {
         messages = [],
         system = '',
         tools = undefined,
-        stream = true,
+        stream = Boolean(req.body.stream),
         max_tokens = 8192,
         temperature = 0.7,
-        model: requestedModel
+        model: requestedModel,
+        querySource
       } = req.body;
 
       const targetModel = smartRouter.resolveModel(requestedModel);
+
+      // Validação rápida de modelos do Claude Code sem gastar cota nem gerar latência
+      if (querySource === 'model_validation') {
+        console.log(chalk.green(`[Claude Code] Validação de modelo aprovada: ${requestedModel || targetModel}`));
+        return res.json({
+          id: `msg_val_${Date.now()}`,
+          type: 'message',
+          role: 'assistant',
+          content: [{ type: 'text', text: 'OK' }],
+          model: requestedModel || targetModel,
+          stop_reason: 'end_turn',
+          usage: { input_tokens: 1, output_tokens: 1 }
+        });
+      }
       const geminiTools = convertAnthropicToolsToGemini(tools);
       const contents = convertAnthropicMessagesToGemini(messages);
       const systemPrompt = extractSystemPrompt(system);
