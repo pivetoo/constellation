@@ -1,32 +1,35 @@
-# 🌌 Constellation
+# Constellation
 
 > **Smart Multi-Account Load Balancer & Proxy para modelos Gemini com suporte nativo ao Claude Code, Cursor e IDEs.**
 
-O **Constellation** permite conectar múltiplas contas Google (com assinatura Google One AI Premium) e unificá-las em um **pool com cota virtualmente infinita**. Ele gerencia o consumo de cota diária de cada conta em tempo real, aplicando **cooldown automático** ao atingir 95% de uso e roteando as requisições para a conta com maior cota livre.
+O **Constellation** conecta multiplas contas Google (com assinatura Google One AI Premium) e as unifica em um pool com cota balanceada e alta disponibilidade. Ele gerencia o consumo de cota de cada conta em tempo real, aplicando cooldown automatico ao atingir 95% de uso e roteando as requisicoes de forma transparente para a conta mais saudavel.
 
 ---
 
-## ✨ Recursos Principais
+## Recursos Principais
 
-- 🧠 **Smart Load Balancer com Cooldown Automático**:
-  - Monitora o `remainingFraction` (fração restante) e `resetTime` de cada modelo em tempo real.
-  - Ao bater **95% de uso** (<= 5% restante) em uma conta, coloca-a em *cooldown* até o horário exato de reset e roteia transparentemente para a próxima conta mais saudável.
-- 🤖 **Compatibilidade Nativa com Claude Code**:
-  - Emula perfeitamente o endpoint `POST /v1/messages` da Anthropic.
-  - Traduz chamadas de ferramentas (*tool use / function calling* como Bash, File Edit, Read, etc.) do Claude Code para a API do Google Cloud Code / Gemini.
-  - Suporte completo a streaming SSE e blocos de pensamento (*thinking / reasoning*).
-- 🌐 **Compatibilidade com OpenAI & Cursor / Aider**:
-  - Endpoint `POST /v1/chat/completions` compatível com qualquer ferramenta que suporte OpenAI.
-- 📊 **Dashboard Web em Tempo Real**:
-  - Interface moderna dark-mode em `http://localhost:6012` mostrando todas as suas contas, barras de progresso de uso por modelo e previsão de reset.
-- 🔄 **Auto-Refresh de Tokens**:
-  - Faz login OAuth2 uma única vez por conta; tokens são renovados automaticamente em segundo plano.
-- 🎯 **Mapeamento Flexível de Modelos (Model Aliasing)**:
-  - Configure qualquer alias (ex: direcionar chamadas de `claude-3-7-sonnet` diretamente para `gemini-3.1-pro-high` ou `gemini-3-flash-agent`).
+- **Smart Load Balancer com Cooldown Automático**:
+  - Monitora o `remainingFraction` (limite da janela de 5 horas) e o consumo semanal oficial retornado pela API do Google.
+  - Ao atingir 95% de uso (ou menos de 5% livre) em uma conta, ativa cooldown automatico e transfere a chamada para a proxima conta disponivel.
+- **Compatibilidade Nativa com Claude Code**:
+  - Emula o endpoint `POST /v1/messages` da Anthropic.
+  - Traduz chamadas de ferramentas (*tool use / function calling* como Bash, File Edit, Read, etc.) entre o Claude Code e a API do Google Cloud Code / Gemini.
+  - Suporte completo a streaming SSE e blocos de pensamento nativos (*thinking*), sem poluir o terminal.
+  - Isolamento de configuracao (`~/.claude-constellation`) para evitar conflitos com contas pessoais do `claude.ai`.
+- **Compatibilidade com OpenAI, Cursor e Aider**:
+  - Endpoint `POST /v1/chat/completions` compativel com qualquer ferramenta que suporte OpenAI.
+  - Raciocinio transmitido via `reasoning_content` para nao interferir em arquivos de codigo.
+- **Dashboard Web em Tempo Real com Temas White e Dark**:
+  - Interface moderna em `http://localhost:6012` exibindo status das contas, barras de progresso da janela de 5h, resumo semanal oficial e previsao de reset.
+  - Alternancia instantanea de tema Claro (White) e Escuro (Dark).
+- **Auto-Refresh de Tokens**:
+  - Autenticacao OAuth2 via navegador; renovacao automatica dos tokens em segundo plano.
+- **Mapeamento Flexivel de Modelos**:
+  - Aliases dinamicos para apontar qualquer modelo solicitado (ex: `claude-sonnet-5`, `claude-opus-5`) para `gemini-3.1-pro-high`, `gemini-3.8-flash`, `claude-opus-4-6-thinking` ou `claude-sonnet-4-6`.
 
 ---
 
-## 📦 Instalação
+## Instalacao
 
 ```bash
 git clone https://github.com/seu-usuario/constellation.git
@@ -36,105 +39,155 @@ npm install
 
 ---
 
-## 🚀 Como Usar
+## Como Usar
 
 ### 1. Conectar suas contas Google
 
-Execute o comando de login para cada conta que você deseja adicionar ao pool (ex: 10 contas):
+Execute o comando de login para cada conta que deseja adicionar ao pool:
 
 ```bash
 node bin/constellation.js login
 ```
 
-O navegador abrirá a tela oficial de login do Google. Faça o login com sua conta Google One AI Premium. Repita o comando para cada uma das suas contas.
+O navegador abrira a tela de login oficial do Google. Faca o login com sua conta Google One AI Premium. Repita o comando para cada uma das suas contas.
 
-### 2. Ver o status das contas e cotas
+### 2. Verificar o status das contas e cotas
 
 ```bash
 node bin/constellation.js accounts
 ```
 
-Saída de exemplo:
-```
-🔍 Verificando contas no pool do Constellation...
+Para forcar a consulta imediata na API do Google (ignorando cache):
 
-Total de contas: 3
-
-────────────────────────────────────────────────────────────────
-[1] dev.rogerio@gmail.com (ID: acc-1)
-    • gemini-3.1-pro-high     : 85% livre       (Reset às 18:00:00)
-    • gemini-3-flash-agent    : 98% livre       (Reset às 18:00:00)
-────────────────────────────────────────────────────────────────
-[2] rogerio.studies@gmail.com (ID: acc-2)
-    • gemini-3.1-pro-high     : [EM COOLDOWN]   (Reset às 16:30:00)
-    • gemini-3-flash-agent    : 72% livre       (Reset às 16:30:00)
-────────────────────────────────────────────────────────────────
+```bash
+node bin/constellation.js accounts --refresh
 ```
 
-### 3. Iniciar o Servidor Proxy & Dashboard
+### 3. Iniciar o Servidor Proxy e Dashboard
 
 ```bash
 node bin/constellation.js serve
 ```
 
-Saída:
-```
-🌌 Constellation Server Ativo na porta 6012!
-  Dashboard Web: http://localhost:6012
-  Claude Code:   http://localhost:6012/v1/messages
-  OpenAI/Cursor: http://localhost:6012/v1/chat/completions
-```
+Opcoes disponiveis:
+- `--port <numero>`: Define uma porta personalizada (padrao: 6012).
+- `--theme <white|dark>`: Define o tema inicial do dashboard (padrao: dark).
 
-Abra `http://localhost:6012` no navegador para acompanhar o dashboard ao vivo!
+Acesse `http://localhost:6012` no navegador para abrir o painel de controle.
 
 ---
 
-## 🤖 Integração com o Claude Code
+## Como Configurar o Comando Global `cclaude`
 
-Com o servidor rodando, abra seu terminal e configure as variáveis de ambiente:
+O `cclaude` permite executar o Claude Code de qualquer pasta ou projeto sem precisar exportar variaveis de ambiente manualmente.
 
-### No Windows (PowerShell):
-```powershell
-$env:ANTHROPIC_BASE_URL="http://localhost:6012/v1"
-$env:ANTHROPIC_API_KEY="sk-anything"
-claude
+### No Windows (PowerShell)
+
+Para que o comando `cclaude` funcione em qualquer terminal PowerShell:
+
+1. Abra seu arquivo de perfil do PowerShell:
+   ```powershell
+   notepad $PROFILE
+   ```
+   *(Caso o arquivo nao exista, crie-o com `New-Item -Type File -Path $PROFILE -Force`)*
+
+2. Adicione a seguinte funcao no final do arquivo:
+   ```powershell
+   function cclaude {
+       node "C:\development\studies\constellation\bin\constellation.js" claude @args
+   }
+   ```
+
+3. Salve o arquivo e recarregue o perfil:
+   ```powershell
+   . $PROFILE
+   ```
+
+### No Windows (Prompt de Comando / CMD / Global PATH)
+
+Crie um arquivo chamado `cclaude.cmd` dentro de uma pasta presente no seu `PATH` (por exemplo, `C:\Users\SEU_USUARIO\AppData\Roaming\npm` ou `C:\Windows\System32`):
+
+```cmd
+@node "C:\development\studies\constellation\bin\constellation.js" claude %*
 ```
 
-### No Linux / macOS (Bash / Zsh):
+### No Linux / macOS (Bash / Zsh)
+
+Adicione o seguinte alias ao seu `~/.bashrc` ou `~/.zshrc`:
+
 ```bash
-export ANTHROPIC_BASE_URL="http://localhost:6012/v1"
-export ANTHROPIC_API_KEY="sk-anything"
-claude
+alias cclaude='node /caminho/para/constellation/bin/constellation.js claude'
 ```
 
-Pronto! O Claude Code agora utiliza o pool inteligente de contas Gemini gerenciado pelo Constellation.
+Recarregue o terminal:
+```bash
+source ~/.bashrc  # ou source ~/.zshrc
+```
+
+### Utilizando o `cclaude`
+
+Com o servidor Constellation rodando (`node bin/constellation.js serve`), va ate a pasta de qualquer projeto e execute:
+
+```bash
+cclaude
+```
+
+Ou execute comandos diretos com argumentos:
+
+```bash
+cclaude -p "Explique a arquitetura deste projeto"
+```
 
 ---
 
-## ✍️ Integração com o Cursor / VS Code (Continue)
+## Integracao Manual com Claude Code
 
-Nas configurações de IA do seu editor:
+Caso prefira iniciar o Claude Code definindo variaveis de ambiente manualmente:
+
+### Windows (PowerShell):
+```powershell
+$env:CLAUDE_CONFIG_DIR = "$HOME\.claude-constellation"
+$env:ANTHROPIC_BASE_URL = "http://localhost:6012"
+$env:ANTHROPIC_API_KEY = "sk-constellation"
+claude
+```
+
+### Linux / macOS:
+```bash
+export CLAUDE_CONFIG_DIR="$HOME/.claude-constellation"
+export ANTHROPIC_BASE_URL="http://localhost:6012"
+export ANTHROPIC_API_KEY="sk-constellation"
+claude
+```
+
+---
+
+## Integracao com Cursor / VS Code / Aider
+
+Nas configuracoes do seu editor ou cliente OpenAI-compatible:
+
 - **Provider:** OpenAI Compatible
 - **Base URL:** `http://localhost:6012/v1`
-- **API Key:** `sk-anything`
-- **Model:** `gemini-3.1-pro-high` (ou `gemini-3-flash-agent`)
+- **API Key:** `sk-constellation`
+- **Model:** `gemini-3.1-pro-high`, `gemini-3.8-flash`, `claude-sonnet-4-6` ou `claude-opus-4-6-thinking`
 
 ---
 
-## ⚙️ Mapeamento de Modelos (`config.json`)
+## Configuracao e Mapeamento (`config.json`)
 
-Você pode personalizar o mapeamento de modelos criando ou editando um `config.json` na raiz do projeto:
+As configuracoes podem ser alteradas diretamente pelo Dashboard Web ou editando o arquivo `config.json` na raiz:
 
 ```json
 {
   "port": 6012,
+  "theme": "dark",
   "softQuotaLimit": 0.95,
-  "defaultModel": "gemini-3.1-pro-high",
+  "defaultModel": "claude-sonnet-4-6",
   "modelAliases": {
-    "claude-3-7-sonnet-latest": "gemini-3.1-pro-high",
-    "claude-3-5-sonnet": "gemini-3.1-pro-high",
-    "claude-3-5-haiku": "gemini-3-flash-agent",
-    "gemini-flash": "gemini-3-flash-agent",
+    "claude-3-7-sonnet-latest": "claude-sonnet-4-6",
+    "claude-3-5-sonnet": "claude-sonnet-4-6",
+    "claude-3-5-haiku": "gemini-3.8-flash",
+    "gemini-flash": "gemini-3.8-flash",
     "gemini-pro": "gemini-3.1-pro-high"
   }
 }
@@ -142,28 +195,30 @@ Você pode personalizar o mapeamento de modelos criando ou editando um `config.j
 
 ---
 
-## 📋 Lista de Comandos CLI
+## Lista de Comandos CLI
 
-| Comando | Descrição |
+| Comando | Descricao |
 |---|---|
-| `node bin/constellation.js login` | Adiciona uma nova conta Google ao pool |
-| `node bin/constellation.js accounts` | Lista todas as contas cadastradas com cota e cooldown |
-| `node bin/constellation.js accounts --refresh` | Força atualização imediata de cotas via Google API |
+| `node bin/constellation.js login` | Adiciona uma nova conta Google ao pool via OAuth2 |
+| `node bin/constellation.js accounts` | Lista todas as contas com status de cota e cooldown |
+| `node bin/constellation.js accounts --refresh` | Forca atualizacao imediata de cotas ignorando cache |
 | `node bin/constellation.js serve` | Inicia o servidor proxy e dashboard na porta 6012 |
-| `node bin/constellation.js serve --port 8080` | Inicia em porta customizada |
-| `node bin/constellation.js test "Seu prompt"` | Testa uma requisição rápida para validar o pool |
-| `node bin/constellation.js remove <email>` | Remove uma conta do pool |
+| `node bin/constellation.js serve --port 8080` | Inicia o servidor em porta customizada |
+| `node bin/constellation.js serve --theme white` | Inicia o servidor com o tema Claro ativo |
+| `node bin/constellation.js claude [args...]` | Inicia o Claude Code conectado diretamente ao Constellation |
+| `node bin/constellation.js test "Prompt"` | Executa uma chamada rapida de teste para validar o pool |
+| `node bin/constellation.js remove <id>` | Remove uma conta cadastrada no pool |
 
 ---
 
-## 🔒 Segurança
+## Seguranca
 
-- O arquivo `keys.json` armazena os tokens de acesso e refresh das suas contas localmente na sua máquina.
-- Ele está incluído no `.gitignore` e **nunca deve ser compartilhado ou versionado**.
-- O servidor roda exclusivamente em `localhost`.
+- O arquivo `keys.json` armazena os tokens de acesso e refresh localmente na sua maquina.
+- O arquivo `keys.json` esta configurado no `.gitignore` e nunca deve ser compartilhado ou versionado.
+- O servidor roda localmente em `localhost`.
 
 ---
 
-## 📄 Licença
+## Licenca
 
 MIT
