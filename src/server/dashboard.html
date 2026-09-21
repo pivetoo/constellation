@@ -55,14 +55,49 @@
       margin-bottom: 30px;
     }
     .quick-setup h3 { font-size: 15px; margin-bottom: 10px; color: var(--accent); }
+    .code-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
     .code-block {
+      flex: 1;
       background: #0d1117;
-      padding: 10px 14px;
+      padding: 12px 14px;
+      padding-right: 100px;
       border-radius: 6px;
       font-family: "SFMono-Regular", Consolas, Menlo, monospace;
       font-size: 13px;
       color: #79c0ff;
       overflow-x: auto;
+      border: 1px solid #212636;
+      white-space: nowrap;
+    }
+    .copy-btn {
+      position: absolute;
+      right: 8px;
+      background: #212636;
+      border: 1px solid #30363d;
+      color: #c9d1d9;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .copy-btn:hover {
+      background: #30363d;
+      color: #fff;
+      border-color: #58a6ff;
+    }
+    .copy-btn.copied {
+      background: #238636;
+      color: #fff;
+      border-color: #2ea043;
     }
 
     .stats-bar {
@@ -226,14 +261,17 @@
       <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">
         Opção 1 (Atalho do Constellation):
       </p>
-      <div class="code-block" style="margin-bottom: 12px;">
-        node bin/constellation.js claude
+      <div class="code-wrapper" style="margin-bottom: 14px;">
+        <div class="code-block" id="code-opt1">node bin/constellation.js claude</div>
+        <button class="copy-btn" onclick="copyCode('code-opt1', this)">📋 Copiar</button>
       </div>
+
       <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">
-        Opção 2 (Comando tradicional):
+        Opção 2 (Comando tradicional com $env):
       </p>
-      <div class="code-block">
-        $env:ANTHROPIC_BASE_URL="http://localhost:6012/v1"; $env:ANTHROPIC_API_KEY="sk-anything"; claude
+      <div class="code-wrapper">
+        <div class="code-block" id="code-opt2">$env:ANTHROPIC_BASE_URL="http://localhost:6012/v1"; $env:ANTHROPIC_API_KEY="sk-anything"; claude</div>
+        <button class="copy-btn" onclick="copyCode('code-opt2', this)">📋 Copiar</button>
       </div>
     </div>
 
@@ -411,6 +449,21 @@
       } catch (err) {
         alert('Erro ao alterar modelo: ' + err.message);
       }
+    }
+
+    function copyCode(elementId, btn) {
+      const text = document.getElementById(elementId).innerText.trim();
+      navigator.clipboard.writeText(text).then(() => {
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '✓ Copiado!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.innerHTML = originalHtml;
+          btn.classList.remove('copied');
+        }, 2000);
+      }).catch(err => {
+        console.error('Falha ao copiar:', err);
+      });
     }
 
     loadConfig();
