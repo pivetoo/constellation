@@ -2,6 +2,7 @@
  * Constellation - Gerenciador de Configuração
  */
 import fs from 'fs/promises';
+import path from 'path';
 import { fileURLToPath } from 'url';
 import { DEFAULT_CONFIG } from './constants.js';
 
