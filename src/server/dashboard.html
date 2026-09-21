@@ -285,23 +285,24 @@
       box-shadow: 0 0 10px rgba(88, 166, 255, 0.25);
     }
 
-    .theme-toggle-btn {
+    .theme-icon-btn {
       background: var(--toggle-btn-bg);
       border: 1px solid var(--toggle-btn-border);
       color: var(--toggle-btn-text);
-      padding: 8px 14px;
+      width: 36px;
+      height: 36px;
       border-radius: 8px;
       cursor: pointer;
-      font-size: 13px;
-      font-weight: 600;
+      font-size: 16px;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      justify-content: center;
       transition: all 0.2s ease;
+      padding: 0;
     }
-    .theme-toggle-btn:hover {
+    .theme-icon-btn:hover {
       border-color: var(--accent);
-      color: var(--accent);
+      transform: scale(1.05);
     }
 
     .add-account-btn {
@@ -356,17 +357,13 @@
           <p style="font-size: 13px; color: var(--text-muted);">Smart Load Balancer & Gemini Router</p>
         </div>
       </div>
-      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-        <button class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Alternar entre tema Claro (White) e Escuro (Dark)">
-          ☀️ Tema White
-        </button>
-        <button class="add-account-btn" style="background: #1f6feb; border-color: #388bfd;" onclick="forceRefreshQuota()">
-          🔄 Atualizar Cotas
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <button class="theme-icon-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Alternar tema White / Dark">
+          ☀️
         </button>
         <button class="add-account-btn" onclick="openLoginPopup()">
           ➕ Conectar Conta Google
         </button>
-        <div class="badge" id="refresh-indicator">Atualizando ao vivo (15s)...</div>
       </div>
     </header>
 
@@ -449,13 +446,6 @@
       }
     }
 
-    async function forceRefreshQuota() {
-      const ind = document.getElementById('refresh-indicator');
-      if (ind) ind.innerText = 'Consultando Google API...';
-      await loadStatus(true);
-      if (ind) ind.innerText = 'Atualizado agora mesmo!';
-      setTimeout(() => { if (ind) ind.innerText = 'Atualizando ao vivo (15s)...'; }, 3000);
-    }
 
     function renderDashboard(data) {
       const accounts = data.accounts || [];
@@ -606,7 +596,8 @@
 
       const btn = document.getElementById('theme-toggle-btn');
       if (btn) {
-        btn.innerHTML = normalized === 'white' ? '🌙 Tema Dark' : '☀️ Tema White';
+        btn.innerHTML = normalized === 'white' ? '🌙' : '☀️';
+        btn.title = normalized === 'white' ? 'Ativar tema Dark' : 'Ativar tema White';
       }
 
       if (saveServer) {
