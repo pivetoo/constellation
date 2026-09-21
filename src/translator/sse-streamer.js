@@ -63,57 +63,16 @@ export async function streamAnthropicResponse(googleReadableStream, res, modelNa
         if (!candidate?.content?.parts) continue;
 
         for (const part of candidate.content.parts) {
-          // Processa pensamento (thought) ou texto normal
+          // Processa pensamento (thought) ou texto normal em tempo real
           let textChunk = '';
-          let isThought = false;
 
           if (typeof part.thought === 'string') {
-            isThought = true;
             textChunk = part.thought;
           } else if (part.text) {
             textChunk = part.text;
-            if (part.thought === true || part.isThought === true) {
-              isThought = true;
-            }
           }
 
-          if (isThought && textChunk) {
-            fullThinking += textChunk;
-
-            // Se havia bloco de texto aberto, fecha antes de abrir thinking
-            if (hasStartedText) {
-              res.write(`event: content_block_stop\ndata: ${JSON.stringify({ type: 'content_block_stop', index: blockIndex })}\n\n`);
-              blockIndex++;
-              hasStartedText = false;
-            }
-
-            if (!hasStartedThinking) {
-              res.write(`event: content_block_start\ndata: ${JSON.stringify({
-                type: 'content_block_start',
-                index: blockIndex,
-                content_block: { type: 'thinking', thinking: '' }
-              })}\n\n`);
-              hasStartedThinking = true;
-            }
-
-            res.write(`event: content_block_delta\ndata: ${JSON.stringify({
-              type: 'content_block_delta',
-              index: blockIndex,
-              delta: { type: 'thinking_delta', thinking: textChunk }
-            })}\n\n`);
-          } else if (textChunk) {
-            // Se havia bloco de thinking aberto, finaliza antes de iniciar o texto
-            if (hasStartedThinking) {
-              res.write(`event: content_block_delta\ndata: ${JSON.stringify({
-                type: 'content_block_delta',
-                index: blockIndex,
-                delta: { type: 'signature_delta', signature: 'skip_thought_signature_validator' }
-              })}\n\n`);
-              res.write(`event: content_block_stop\ndata: ${JSON.stringify({ type: 'content_block_stop', index: blockIndex })}\n\n`);
-              blockIndex++;
-              hasStartedThinking = false;
-            }
-
+          if (textChunk) {
             fullText += textChunk;
 
             if (!hasStartedText) {
@@ -145,17 +104,6 @@ export async function streamAnthropicResponse(googleReadableStream, res, modelNa
 
             collectedTools.push({ type: 'tool_use', id: toolId, name: funcName, input: argsObj });
 
-            if (hasStartedThinking) {
-              res.write(`event: content_block_delta\ndata: ${JSON.stringify({
-                type: 'content_block_delta',
-                index: blockIndex,
-                delta: { type: 'signature_delta', signature: 'skip_thought_signature_validator' }
-              })}\n\n`);
-              res.write(`event: content_block_stop\ndata: ${JSON.stringify({ type: 'content_block_stop', index: blockIndex })}\n\n`);
-              blockIndex++;
-              hasStartedThinking = false;
-            }
-
             if (hasStartedText) {
               res.write(`event: content_block_stop\ndata: ${JSON.stringify({ type: 'content_block_stop', index: blockIndex })}\n\n`);
               blockIndex++;
@@ -183,18 +131,6 @@ export async function streamAnthropicResponse(googleReadableStream, res, modelNa
         if (err.message.includes('Google API Error')) throw err;
       }
     }
-  }
-
-  // Fecha blocos se ainda estiverem abertos
-  if (hasStartedThinking) {
-    res.write(`event: content_block_delta\ndata: ${JSON.stringify({
-      type: 'content_block_delta',
-      index: blockIndex,
-      delta: { type: 'signature_delta', signature: 'skip_thought_signature_validator' }
-    })}\n\n`);
-    res.write(`event: content_block_stop\ndata: ${JSON.stringify({ type: 'content_block_stop', index: blockIndex })}\n\n`);
-    blockIndex++;
-    hasStartedThinking = false;
   }
 
   if (hasStartedText) {
