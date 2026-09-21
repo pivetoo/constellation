@@ -65,6 +65,12 @@ export function createServer() {
         newAliases = {
           'claude-3-7-sonnet-latest': 'claude-opus-4-6-thinking',
           'claude-3-7-sonnet': 'claude-opus-4-6-thinking',
+          'claude-3-5-sonnet': 'claude-opus-4-6-thinking'
+        };
+      } else if (defaultModel === 'claude-sonnet-4-6') {
+        newAliases = {
+          'claude-3-7-sonnet-latest': 'claude-sonnet-4-6',
+          'claude-3-7-sonnet': 'claude-sonnet-4-6',
           'claude-3-5-sonnet': 'claude-sonnet-4-6'
         };
       } else if (defaultModel === 'gemini-3.1-pro-high') {
@@ -73,11 +79,12 @@ export function createServer() {
           'claude-3-7-sonnet': 'gemini-3.1-pro-high',
           'claude-3-5-sonnet': 'gemini-3.1-pro-high'
         };
-      } else if (defaultModel === 'gemini-3-flash-agent') {
+      } else if (defaultModel === 'gemini-3.8-flash' || defaultModel === 'gemini-3-flash-agent') {
         newAliases = {
-          'claude-3-7-sonnet-latest': 'gemini-3-flash-agent',
-          'claude-3-7-sonnet': 'gemini-3-flash-agent',
-          'claude-3-5-sonnet': 'gemini-3-flash-agent'
+          'claude-3-7-sonnet-latest': 'gemini-3.8-flash',
+          'claude-3-7-sonnet': 'gemini-3.8-flash',
+          'claude-3-5-sonnet': 'gemini-3.8-flash',
+          'claude-3-5-haiku': 'gemini-3.8-flash'
         };
       }
 
@@ -100,16 +107,13 @@ export function createServer() {
   app.get('/v1/models', (req, res) => {
     const config = configManager.get();
     const modelList = [
-      'claude-3-7-sonnet-latest',
-      'claude-3-7-sonnet',
-      'claude-3-5-sonnet-latest',
-      'claude-3-5-sonnet',
-      'claude-3-5-haiku-latest',
-      'claude-3-5-haiku',
       'gemini-3.1-pro-high',
-      'gemini-3-flash-agent',
-      'gemini-2.5-flash',
-      'claude-opus-4-6-thinking'
+      'gemini-3.8-flash',
+      'claude-opus-4-6-thinking',
+      'claude-sonnet-4-6',
+      'claude-3-7-sonnet',
+      'claude-3-5-sonnet',
+      'claude-3-5-haiku'
     ];
 
     res.json({

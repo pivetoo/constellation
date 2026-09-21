@@ -207,13 +207,16 @@
       </div>
       <div style="display: flex; gap: 12px; flex-wrap: wrap;">
         <button onclick="setModel('gemini-3.1-pro-high')" id="btn-gemini-pro" class="model-btn active">
-          🧠 Gemini 3.1 Pro (Recomendado)
+          🧠 Gemini 3.1 Pro
+        </button>
+        <button onclick="setModel('gemini-3.8-flash')" id="btn-gemini-flash" class="model-btn">
+          ⚡ Gemini 3.8 Flash
         </button>
         <button onclick="setModel('claude-opus-4-6-thinking')" id="btn-claude-opus" class="model-btn">
-          🎭 Claude Opus 4.6 Thinking
+          🎭 Claude Opus 4.6
         </button>
-        <button onclick="setModel('gemini-3-flash-agent')" id="btn-gemini-flash" class="model-btn">
-          ⚡ Gemini 3 Flash (Mais Rápido)
+        <button onclick="setModel('claude-sonnet-4-6')" id="btn-claude-sonnet" class="model-btn">
+          🖋️ Claude Sonnet 4.6
         </button>
       </div>
     </div>
@@ -366,20 +369,26 @@
     function updateModelUI(activeModel) {
       const badge = document.getElementById('active-model-badge');
       const btnPro = document.getElementById('btn-gemini-pro');
-      const btnOpus = document.getElementById('btn-claude-opus');
       const btnFlash = document.getElementById('btn-gemini-flash');
+      const btnOpus = document.getElementById('btn-claude-opus');
+      const btnSonnet = document.getElementById('btn-claude-sonnet');
 
       btnPro.classList.remove('active');
-      btnOpus.classList.remove('active');
       btnFlash.classList.remove('active');
+      btnOpus.classList.remove('active');
+      btnSonnet.classList.remove('active');
 
       if (activeModel.includes('claude-opus')) {
-        badge.innerText = 'Claude Opus 4.6 Thinking';
+        badge.innerText = 'Claude Opus 4.6';
         badge.style.background = '#8957e5';
         btnOpus.classList.add('active');
+      } else if (activeModel.includes('claude-sonnet')) {
+        badge.innerText = 'Claude Sonnet 4.6';
+        badge.style.background = '#d97706';
+        btnSonnet.classList.add('active');
       } else if (activeModel.includes('flash')) {
-        badge.innerText = 'Gemini 3 Flash';
-        badge.style.background = '#d29922';
+        badge.innerText = 'Gemini 3.8 Flash';
+        badge.style.background = '#3b82f6';
         btnFlash.classList.add('active');
       } else {
         badge.innerText = 'Gemini 3.1 Pro';

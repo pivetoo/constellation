@@ -45,23 +45,38 @@ export const DEFAULT_CONFIG = {
   port: 6012,
   softQuotaLimit: 0.95, // 95% de uso (ou <= 5% restante) ativa cooldown
   defaultModel: 'gemini-3.1-pro-high',
-  // Mapeamento automático de modelos solicitados pelo cliente para modelos reais do Gemini
+  // Os 4 modelos principais suportados
+  supportedModels: [
+    { id: 'gemini-3.1-pro-high', name: 'Gemini 3.1 Pro', icon: '🧠', tag: 'Recomendado' },
+    { id: 'gemini-3.8-flash', name: 'Gemini 3.8 Flash', icon: '⚡', tag: 'Mais Rápido' },
+    { id: 'claude-opus-4-6-thinking', name: 'Claude Opus 4.6', icon: '🎭', tag: 'Thinking' },
+    { id: 'claude-sonnet-4-6', name: 'Claude Sonnet 4.6', icon: '🖋️', tag: 'Equilibrado' }
+  ],
+  // Mapeamento automático de modelos solicitados pelo cliente
   modelAliases: {
-    // Claude Code / Anthropic aliases
+    // Gemini
+    'gemini-3.1-pro': 'gemini-3.1-pro-high',
+    'gemini-3.1-pro-high': 'gemini-3.1-pro-high',
+    'gemini-pro': 'gemini-3.1-pro-high',
+    'gemini-3.8-flash': 'gemini-3.8-flash',
+    'gemini-3-flash': 'gemini-3.8-flash',
+    'gemini-flash': 'gemini-3.8-flash',
+    'gemini-3-flash-agent': 'gemini-3.8-flash',
+    // Claude
+    'claude-opus-4-6': 'claude-opus-4-6-thinking',
+    'claude-opus-4-6-thinking': 'claude-opus-4-6-thinking',
+    'claude-opus': 'claude-opus-4-6-thinking',
+    'claude-sonnet-4-6': 'claude-sonnet-4-6',
+    'claude-sonnet': 'claude-sonnet-4-6',
+    // Aliases comuns de Claude Code
     'claude-3-7-sonnet-latest': 'gemini-3.1-pro-high',
     'claude-3-7-sonnet': 'gemini-3.1-pro-high',
-    'claude-3-5-sonnet-latest': 'gemini-3.1-pro-high',
-    'claude-3-5-sonnet': 'gemini-3.1-pro-high',
-    'claude-3-5-haiku-latest': 'gemini-3-flash-agent',
-    'claude-3-5-haiku': 'gemini-3-flash-agent',
-    'claude-opus-4-6-thinking': 'claude-opus-4-6-thinking',
-    // Gemini aliases
-    'gemini-pro': 'gemini-3.1-pro-high',
-    'gemini-flash': 'gemini-3-flash-agent',
-    'gemini-3.8-flash': 'gemini-3-flash-agent',
-    'gemini-3.1-pro': 'gemini-3.1-pro-high',
-    // OpenAI aliases
+    'claude-3-5-sonnet-latest': 'claude-sonnet-4-6',
+    'claude-3-5-sonnet': 'claude-sonnet-4-6',
+    'claude-3-5-haiku-latest': 'gemini-3.8-flash',
+    'claude-3-5-haiku': 'gemini-3.8-flash',
+    // OpenAI
     'gpt-4o': 'gemini-3.1-pro-high',
-    'gpt-4o-mini': 'gemini-3-flash-agent'
+    'gpt-4o-mini': 'gemini-3.8-flash'
   }
 };
