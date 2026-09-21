@@ -17,6 +17,8 @@ export function extractSystemPrompt(system) {
   return '';
 }
 
+export const thoughtSignatureStore = new Map();
+
 /**
  * Converte o histórico de mensagens da Anthropic (Claude Code) para o formato do Gemini
  */
@@ -35,14 +37,22 @@ export function convertAnthropicMessagesToGemini(messages) {
 
         if (block.type === 'text') {
           parts.push({ text: block.text });
+        } else if (block.type === 'thinking') {
+          if (block.thinking) parts.push({ text: block.thinking, thought: true });
         } else if (block.type === 'tool_use') {
           toolIdToName[block.id] = block.name;
+          const sig = thoughtSignatureStore.get(block.id) ||
+                      thoughtSignatureStore.get(block.name) ||
+                      'skip_thought_signature_validator';
+
           parts.push({
             functionCall: {
               id: block.id,
               name: block.name,
               args: block.input || {}
-            }
+            },
+            thoughtSignature: sig,
+            thought_signature: sig
           });
         } else if (block.type === 'tool_result') {
           const funcName = toolIdToName[block.tool_use_id] || block.name || 'tool_response';
@@ -108,7 +118,9 @@ export function convertOpenAIMessagesToGemini(messages) {
             id: tc.id,
             name: tc.function.name,
             args
-          }
+          },
+          thoughtSignature: 'skip_thought_signature_validator',
+          thought_signature: 'skip_thought_signature_validator'
         });
       }
     }
