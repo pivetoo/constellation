@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Constellation - Smart Pool Dashboard</title>
+  <style>
+    :root {
+      --bg: #090a0f;
+      --card-bg: #12151f;
+      --card-border: #1e2433;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #58a6ff;
+      --success: #3fb950;
+      --warning: #d29922;
+      --danger: #f85149;
+      --cooldown: #bc8cff;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      padding: 30px 20px;
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand h1 { font-size: 26px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+    .brand span { color: var(--accent); }
+    .badge {
+      background: #1f293d;
+      color: var(--accent);
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .quick-setup {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 18px 24px;
+      margin-bottom: 30px;
+    }
+    .quick-setup h3 { font-size: 15px; margin-bottom: 10px; color: var(--accent); }
+    .code-block {
+      background: #0d1117;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-family: "SFMono-Regular", Consolas, Menlo, monospace;
+      font-size: 13px;
+      color: #79c0ff;
+      overflow-x: auto;
+    }
+
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 16px;
+    }
+    .stat-card .label { font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+    .stat-card .value { font-size: 24px; font-weight: 700; color: #fff; }
+
+    .accounts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+    .account-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 20px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .account-card:hover {
+      border-color: #2f384f;
+      transform: translateY(-2px);
+    }
+    .account-card.cooldown { border-left: 4px solid var(--cooldown); }
+    .account-card.healthy { border-left: 4px solid var(--success); }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .account-email {
+      font-weight: 600;
+      font-size: 15px;
+      color: #fff;
+      word-break: break-all;
+    }
+    .status-pill {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 10px;
+      text-transform: uppercase;
+    }
+    .status-pill.ready { background: #1b382b; color: var(--success); }
+    .status-pill.cooldown { background: #351c4a; color: var(--cooldown); }
+    .status-pill.exhausted { background: #3d1c1a; color: var(--danger); }
+
+    .model-quota {
+      margin-top: 14px;
+    }
+    .model-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+    .model-name { color: var(--text-muted); font-weight: 500; }
+    .model-percent { font-weight: 700; color: #fff; }
+
+    .progress-bar-bg {
+      background: #212636;
+      border-radius: 4px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+    .fill-healthy { background: var(--success); }
+    .fill-warning { background: var(--warning); }
+    .fill-danger { background: var(--danger); }
+
+    .reset-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      text-align: right;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div style="font-size: 32px;">🌌</div>
+        <div>
+          <h1>Constellation <span>Pool</span></h1>
+          <p style="font-size: 13px; color: var(--text-muted);">Smart Load Balancer & Gemini Router</p>
+        </div>
+      </div>
+      <div class="badge" id="refresh-indicator">Atualizando ao vivo (15s)...</div>
+    </header>
+
+    <div class="quick-setup">
+      <h3>🚀 Como conectar com o Claude Code:</h3>
+      <div class="code-block">
+        $env:ANTHROPIC_BASE_URL="http://localhost:6012/v1"; $env:ANTHROPIC_API_KEY="sk-anything"; claude
+      </div>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="label">Total de Contas</div>
+        <div class="value" id="stat-total-accounts">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Contas Prontas</div>
+        <div class="value" id="stat-ready-accounts" style="color: var(--success);">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Contas em Cooldown</div>
+        <div class="value" id="stat-cooldown-accounts" style="color: var(--cooldown);">-</div>
+      </div>
+    </div>
+
+    <div class="accounts-grid" id="accounts-container">
+      <div style="color: var(--text-muted); grid-column: 1 / -1; text-align: center; padding: 40px;">
+        Carregando status das contas...
+      </div>
+    </div>
+
+    <footer>
+      Constellation — Cota infinita e rotação inteligente para Gemini Pro & Flash.
+    </footer>
+  </div>
+
+  <script>
+    async function loadStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        renderDashboard(data);
+      } catch (err) {
+        console.error('Falha ao atualizar dashboard:', err);
+      }
+    }
+
+    function renderDashboard(data) {
+      const accounts = data.accounts || [];
+      document.getElementById('stat-total-accounts').innerText = accounts.length;
+
+      let readyCount = 0;
+      let cooldownCount = 0;
+
+      const container = document.getElementById('accounts-container');
+      if (accounts.length === 0) {
+        container.innerHTML = `
+          <div style="color: var(--text-muted); grid-column: 1 / -1; text-align: center; padding: 40px;">
+            Nenhuma conta conectada. Execute <code>constellation login</code> no terminal para adicionar suas contas.
+          </div>
+        `;
+        document.getElementById('stat-ready-accounts').innerText = 0;
+        document.getElementById('stat-cooldown-accounts').innerText = 0;
+        return;
+      }
+
+      container.innerHTML = accounts.map((acc, index) => {
+        const models = acc.models || {};
+        let isAnyCooldown = false;
+        let isAnyExhausted = false;
+
+        const modelsHtml = Object.entries(models).map(([mName, q]) => {
+          if (q.inCooldown) isAnyCooldown = true;
+          if (q.isSoftQuotaExceeded) isAnyExhausted = true;
+
+          const rem = q.remainingPercent ?? 100;
+          let fillClass = 'fill-healthy';
+          if (rem <= 10) fillClass = 'fill-danger';
+          else if (rem <= 30) fillClass = 'fill-warning';
+
+          const displayName = mName.replace(/^gemini-/, '').replace(/^claude-/, '');
+
+          return `
+            <div class="model-quota">
+              <div class="model-label">
+                <span class="model-name">${displayName}</span>
+                <span class="model-percent">${rem}% livre</span>
+              </div>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill ${fillClass}" style="width: ${rem}%;"></div>
+              </div>
+              ${q.resetTimeFormatted ? `<div class="reset-hint">Reset às ${q.resetTimeFormatted}</div>` : ''}
+            </div>
+          `;
+        }).join('');
+
+        let cardClass = 'healthy';
+        let pillText = 'Pronta';
+        let pillClass = 'ready';
+
+        if (isAnyCooldown) {
+          cardClass = 'cooldown';
+          pillText = 'Cooldown';
+          pillClass = 'cooldown';
+          cooldownCount++;
+        } else if (isAnyExhausted) {
+          cardClass = 'cooldown';
+          pillText = 'Cota 95%';
+          pillClass = 'exhausted';
+          cooldownCount++;
+        } else {
+          readyCount++;
+        }
+
+        return `
+          <div class="account-card ${cardClass}">
+            <div class="card-header">
+              <span class="account-email">${acc.email || `Conta #${index + 1}`}</span>
+              <span class="status-pill ${pillClass}">${pillText}</span>
+            </div>
+            ${modelsHtml || '<div style="color: var(--text-muted); font-size: 13px;">Aguardando primeira consulta de cota...</div>'}
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('stat-ready-accounts').innerText = readyCount;
+      document.getElementById('stat-cooldown-accounts').innerText = cooldownCount;
+    }
+
+    loadStatus();
+    setInterval(loadStatus, 15000);
+  </script>
+</body>
+</html>
