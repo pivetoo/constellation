@@ -15,10 +15,11 @@ export async function streamAnthropicResponse(googleReadableStream, res, modelNa
   const messageId = `msg_${Date.now()}`;
   let blockIndex = 0;
   let hasStartedText = false;
-  let inThoughtBlock = false;
+  let hasStartedThinking = false;
   let stopReason = 'end_turn';
   const collectedTools = [];
   let fullText = '';
+  let fullThinking = '';
 
   // 1. Início da mensagem
   res.write(`event: message_start\ndata: ${JSON.stringify({
@@ -76,19 +77,44 @@ export async function streamAnthropicResponse(googleReadableStream, res, modelNa
             }
           }
 
-          if (textChunk) {
-            let formattedChunk = '';
-            if (isThought && !inThoughtBlock) {
-              inThoughtBlock = true;
-              formattedChunk = '<think>\n' + textChunk;
-            } else if (!isThought && inThoughtBlock) {
-              inThoughtBlock = false;
-              formattedChunk = '\n</think>\n\n' + textChunk;
-            } else {
-              formattedChunk = textChunk;
+          if (isThought && textChunk) {
+            fullThinking += textChunk;
+
+            // Se havia bloco de texto aberto, fecha antes de abrir thinking
+            if (hasStartedText) {
+              res.write(`event: content_block_stop\ndata: ${JSON.stringify({ type: 'content_block_stop', index: blockIndex })}\n\n`);
+              blockIndex++;
+              hasStartedText = false;
             }
 
-            fullText += formattedChunk;
+            if (!hasStartedThinking) {
+              res.write(`event: content_block_start\ndata: ${JSON.stringify({
+                type: 'content_block_start',
+                index: blockIndex,
+                content_block: { type: 'thinking', thinking: '' }
+              })}\n\n`);
+              hasStartedThinking = true;
+            }
+
+            res.write(`event: content_block_delta\ndata: ${JSON.stringify({
+              type: 'content_block_delta',
+              index: blockIndex,
+              delta: { type: 'thinking_delta', thinking: textChunk }
+            })}\n\n`);
+          } else if (textChunk) {
+            // Se havia bloco de thinking aberto, finaliza antes de iniciar o texto
+            if (hasStartedThinking) {
+              res.write(`event: content_block_delta\ndata: ${JSON.stringify({
+                type: 'content_block_delta',
+                index: blockIndex,
+                delta: { type: 'signature_delta', signature: 'skip_thought_signature_validator' }
+              })}\n\n`);
+              res.write(`event: content_block_stop\ndata: ${JSON.stringify({ type: 'content_block_stop', index: blockIndex })}\n\n`);
+              blockIndex++;
+              hasStartedThinking = false;
+            }
+
+            fullText += textChunk;
 
             if (!hasStartedText) {
               res.write(`event: content_block_start\ndata: ${JSON.stringify({
@@ -102,7 +128,7 @@ export async function streamAnthropicResponse(googleReadableStream, res, modelNa
             res.write(`event: content_block_delta\ndata: ${JSON.stringify({
               type: 'content_block_delta',
               index: blockIndex,
-              delta: { type: 'text_delta', text: formattedChunk }
+              delta: { type: 'text_delta', text: textChunk }
             })}\n\n`);
           } else if (part.functionCall) {
             // Processa chamada de ferramenta (tool use)
@@ -119,16 +145,18 @@ export async function streamAnthropicResponse(googleReadableStream, res, modelNa
 
             collectedTools.push({ type: 'tool_use', id: toolId, name: funcName, input: argsObj });
 
+            if (hasStartedThinking) {
+              res.write(`event: content_block_delta\ndata: ${JSON.stringify({
+                type: 'content_block_delta',
+                index: blockIndex,
+                delta: { type: 'signature_delta', signature: 'skip_thought_signature_validator' }
+              })}\n\n`);
+              res.write(`event: content_block_stop\ndata: ${JSON.stringify({ type: 'content_block_stop', index: blockIndex })}\n\n`);
+              blockIndex++;
+              hasStartedThinking = false;
+            }
+
             if (hasStartedText) {
-              if (inThoughtBlock) {
-                fullText += '\n</think>\n\n';
-                res.write(`event: content_block_delta\ndata: ${JSON.stringify({
-                  type: 'content_block_delta',
-                  index: blockIndex,
-                  delta: { type: 'text_delta', text: '\n</think>\n\n' }
-                })}\n\n`);
-                inThoughtBlock = false;
-              }
               res.write(`event: content_block_stop\ndata: ${JSON.stringify({ type: 'content_block_stop', index: blockIndex })}\n\n`);
               blockIndex++;
               hasStartedText = false;
@@ -157,16 +185,19 @@ export async function streamAnthropicResponse(googleReadableStream, res, modelNa
     }
   }
 
-  // Fecha bloco de texto se ainda estiver aberto
+  // Fecha blocos se ainda estiverem abertos
+  if (hasStartedThinking) {
+    res.write(`event: content_block_delta\ndata: ${JSON.stringify({
+      type: 'content_block_delta',
+      index: blockIndex,
+      delta: { type: 'signature_delta', signature: 'skip_thought_signature_validator' }
+    })}\n\n`);
+    res.write(`event: content_block_stop\ndata: ${JSON.stringify({ type: 'content_block_stop', index: blockIndex })}\n\n`);
+    blockIndex++;
+    hasStartedThinking = false;
+  }
+
   if (hasStartedText) {
-    if (inThoughtBlock) {
-      fullText += '\n</think>\n\n';
-      res.write(`event: content_block_delta\ndata: ${JSON.stringify({
-        type: 'content_block_delta',
-        index: blockIndex,
-        delta: { type: 'text_delta', text: '\n</think>\n\n' }
-      })}\n\n`);
-    }
     res.write(`event: content_block_stop\ndata: ${JSON.stringify({ type: 'content_block_stop', index: blockIndex })}\n\n`);
   }
 
@@ -220,8 +251,9 @@ export async function streamOpenAIResponse(googleReadableStream, res, modelName)
         if (!candidate?.content?.parts) continue;
 
         for (const part of candidate.content.parts) {
-          const chunkText = part.text || part.thought || '';
-          if (chunkText) {
+          const thoughtChunk = typeof part.thought === 'string' ? part.thought : '';
+          const isThoughtPart = part.thought === true || part.isThought === true;
+          if (thoughtChunk || (isThoughtPart && part.text)) {
             res.write(`data: ${JSON.stringify({
               id,
               object: 'chat.completion.chunk',
@@ -229,7 +261,19 @@ export async function streamOpenAIResponse(googleReadableStream, res, modelName)
               model: modelName,
               choices: [{
                 index: 0,
-                delta: { content: chunkText },
+                delta: { reasoning_content: thoughtChunk || part.text },
+                finish_reason: null
+              }]
+            })}\n\n`);
+          } else if (part.text) {
+            res.write(`data: ${JSON.stringify({
+              id,
+              object: 'chat.completion.chunk',
+              created,
+              model: modelName,
+              choices: [{
+                index: 0,
+                delta: { content: part.text },
                 finish_reason: null
               }]
             })}\n\n`);

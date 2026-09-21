@@ -179,6 +179,7 @@ export function createServer() {
         max_tokens = 8192,
         temperature = 0.7,
         model: requestedModel,
+        thinking: requestedThinking,
         querySource
       } = req.body;
 
@@ -233,9 +234,12 @@ function resolveActualGoogleModel(model) {
   return model;
 }
 
-function buildThinkingConfig(actualModel) {
+function buildThinkingConfig(actualModel, requestedThinking) {
+  if (requestedThinking?.type === 'disabled' || process.env.CONSTELLATION_NO_THINKING === 'true') {
+    return undefined;
+  }
   if (actualModel.includes('opus') || actualModel.includes('thinking')) {
-    return { includeThoughts: true, thinkingBudget: 1024 };
+    return { includeThoughts: true, thinkingBudget: requestedThinking?.budget_tokens || 1024 };
   }
   if (actualModel.includes('gemini-pro') || actualModel.includes('gemini-3.6') || actualModel.includes('agent')) {
     return { includeThoughts: true, thinkingLevel: 'high' };
@@ -279,7 +283,7 @@ async function callGoogleCodeAssist(account, requestBody) {
 
       await smartRouter.executeWithFailover(targetModel, async (account, resolvedModel) => {
         const actualGoogleModel = resolveActualGoogleModel(resolvedModel);
-        const thinkingConfig = buildThinkingConfig(actualGoogleModel);
+        const thinkingConfig = buildThinkingConfig(actualGoogleModel, requestedThinking);
         const finalMaxTokens = thinkingConfig?.thinkingBudget
           ? Math.max(max_tokens || 8192, 4096)
           : (max_tokens || 8192);
