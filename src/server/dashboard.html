@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Constellation - Smart Pool Dashboard</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌌</text></svg>">
   <style>
     :root, [data-theme="dark"] {
       --bg: #090a0f;
@@ -263,6 +264,41 @@
       text-align: right;
     }
 
+    .weekly-summary-card {
+      background: var(--summary-bg);
+      border: 1px solid var(--summary-border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-top: 14px;
+      font-size: 11px;
+      transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
+    .weekly-summary-title {
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+    .weekly-summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 3px;
+    }
+    .weekly-summary-row strong {
+      color: var(--text-heading);
+    }
+    .weekly-summary-divider {
+      border-top: 1px dashed var(--summary-border);
+      padding-top: 4px;
+      margin-top: 4px;
+    }
+    .weekly-summary-desc {
+      color: var(--text-muted);
+      font-size: 10px;
+      margin-bottom: 6px;
+      line-height: 1.3;
+    }
+
     .model-btn {
       background: var(--btn-bg);
       border: 1px solid var(--btn-border);
@@ -458,7 +494,7 @@
       if (accounts.length === 0) {
         container.innerHTML = `
           <div style="color: var(--text-muted); grid-column: 1 / -1; text-align: center; padding: 40px; background: var(--card-bg); border-radius: 12px; border: 1px dashed var(--card-border);">
-            <p style="font-size: 16px; margin-bottom: 14px; color: #fff;">Nenhuma conta conectada no seu pool.</p>
+            <p style="font-size: 16px; margin-bottom: 14px; color: var(--text-heading);">Nenhuma conta conectada no seu pool.</p>
             <button class="add-account-btn" style="font-size: 14px; padding: 10px 20px;" onclick="openLoginPopup()">
               ➕ Conectar Primeira Conta Google
             </button>
@@ -503,7 +539,7 @@
                 <div class="progress-bar-fill ${fillClass}" style="width: ${rem}%;"></div>
               </div>
               <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-                <span style="font-size: 10px; color: #8b949e;">Bloco 5h</span>
+                <span style="font-size: 10px; color: var(--text-muted);">Bloco 5h</span>
                 ${q.resetTimeFormatted ? `<span class="reset-hint" style="margin-top:0;">Reset às ${q.resetTimeFormatted}</span>` : ''}
               </div>
             </div>
@@ -552,17 +588,17 @@
           const claudeWeekly = claudeGroup?.buckets?.find(b => b.window === 'weekly');
 
           summaryHtml = `
-            <div style="background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 10px; margin-top: 14px; font-size: 11px;">
-              <div style="font-weight: 600; color: #58a6ff; margin-bottom: 6px;">🗓️ Limite Semanal (Google One)</div>
-              <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+            <div class="weekly-summary-card">
+              <div class="weekly-summary-title">🗓️ Limite Semanal (Google One)</div>
+              <div class="weekly-summary-row">
                 <span style="color: var(--text-muted);">Gemini Semanal:</span>
-                <strong style="color: #fff;">${geminiWeekly ? geminiWeekly.remainingPercent + '%' : '100%'} restante</strong>
+                <strong>${geminiWeekly ? geminiWeekly.remainingPercent + '%' : '100%'} restante</strong>
               </div>
-              ${geminiWeekly?.description ? `<div style="color: #8b949e; font-size: 10px; margin-bottom: 6px;">${geminiWeekly.description}</div>` : ''}
+              ${geminiWeekly?.description ? `<div class="weekly-summary-desc">${geminiWeekly.description}</div>` : ''}
               ${claudeWeekly ? `
-                <div style="display: flex; justify-content: space-between; border-top: 1px dashed #30363d; padding-top: 4px; margin-top: 4px;">
+                <div class="weekly-summary-row weekly-summary-divider">
                   <span style="color: var(--text-muted);">Claude / GPT Semanal:</span>
-                  <strong style="color: #fff;">${claudeWeekly.remainingPercent}% restante</strong>
+                  <strong>${claudeWeekly.remainingPercent}% restante</strong>
                 </div>
               ` : ''}
             </div>
