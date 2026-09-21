@@ -1,0 +1,32 @@
+{
+  "name": "constellation",
+  "version": "1.0.0",
+  "description": "Smart Multi-Account Router & Proxy for Gemini models with Claude Code compatibility",
+  "type": "module",
+  "main": "src/cli/index.js",
+  "bin": {
+    "constellation": "./bin/constellation.js"
+  },
+  "scripts": {
+    "start": "node bin/constellation.js serve",
+    "login": "node bin/constellation.js login",
+    "accounts": "node bin/constellation.js accounts"
+  },
+  "keywords": [
+    "gemini",
+    "claude-code",
+    "anthropic",
+    "multi-account",
+    "proxy",
+    "load-balancer"
+  ],
+  "author": "Rogério Piveto",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "express": "^4.21.2",
+    "google-auth-library": "^9.15.1",
+    "open": "^10.1.0"
+  }
+}
