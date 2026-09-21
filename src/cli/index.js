@@ -67,32 +67,36 @@ program
         );
 
         const models = acc.models || {};
-        const entries = Object.entries(models);
+        const TARGET_MODELS = [
+          { match: (k) => k.includes('gemini-3.1-pro') || k.includes('gemini-3-pro'), name: 'Gemini 3.1 Pro' },
+          { match: (k) => k.includes('gemini-3.8-flash') || k.includes('gemini-3-flash'), name: 'Gemini 3.8 Flash' },
+          { match: (k) => k.includes('claude-opus'), name: 'Claude Opus 4.6' },
+          { match: (k) => k.includes('claude-sonnet'), name: 'Claude Sonnet 4.6' }
+        ];
 
-        if (entries.length === 0) {
-          console.log(chalk.yellow(`    ‣ Nenhuma informação de cota disponível ainda.`));
-        } else {
-          for (const [mName, q] of entries) {
-            let statusColor = chalk.green;
-            let statusLabel = `${q.remainingPercent}% livre`;
+        for (const target of TARGET_MODELS) {
+          const foundKey = Object.keys(models).find(k => target.match(k));
+          const q = foundKey ? models[foundKey] : { remainingPercent: 100, usagePercent: 0 };
 
-            if (q.inCooldown) {
-              statusColor = chalk.magenta;
-              statusLabel = `[EM COOLDOWN]`;
-            } else if (q.isSoftQuotaExceeded) {
-              statusColor = chalk.red;
-              statusLabel = `[95% ATINGIDO]`;
-            } else if (q.remainingPercent <= 20) {
-              statusColor = chalk.yellow;
-            }
+          let statusColor = chalk.green;
+          let statusLabel = `${q.remainingPercent}% livre`;
 
-            const resetInfo = q.resetTimeFormatted ? chalk.gray(` (Reset às ${q.resetTimeFormatted})`) : '';
-            console.log(
-              `    ${chalk.gray('•')} ${chalk.white(mName.padEnd(24))}: ` +
-              statusColor(statusLabel.padEnd(16)) +
-              resetInfo
-            );
+          if (q.inCooldown) {
+            statusColor = chalk.magenta;
+            statusLabel = `[EM COOLDOWN]`;
+          } else if (q.isSoftQuotaExceeded) {
+            statusColor = chalk.red;
+            statusLabel = `[95% ATINGIDO]`;
+          } else if (q.remainingPercent <= 20) {
+            statusColor = chalk.yellow;
           }
+
+          const resetInfo = q.resetTimeFormatted ? chalk.gray(` (Reset às ${q.resetTimeFormatted})`) : '';
+          console.log(
+            `    ${chalk.gray('•')} ${chalk.white(target.name.padEnd(22))}: ` +
+            statusColor(statusLabel.padEnd(16)) +
+            resetInfo
+          );
         }
       });
       console.log(chalk.gray(`────────────────────────────────────────────────────────────────\n`));

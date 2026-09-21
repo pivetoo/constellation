@@ -336,7 +336,17 @@
         let isAnyCooldown = false;
         let isAnyExhausted = false;
 
-        const modelsHtml = Object.entries(models).map(([mName, q]) => {
+        const TARGET_MODELS = [
+          { match: (k) => k.includes('gemini-3.1-pro') || k.includes('gemini-3-pro'), name: '🧠 Gemini 3.1 Pro' },
+          { match: (k) => k.includes('gemini-3.8-flash') || k.includes('gemini-3-flash'), name: '⚡ Gemini 3.8 Flash' },
+          { match: (k) => k.includes('claude-opus'), name: '🎭 Claude Opus 4.6' },
+          { match: (k) => k.includes('claude-sonnet'), name: '🖋️ Claude Sonnet 4.6' }
+        ];
+
+        const modelsHtml = TARGET_MODELS.map(target => {
+          const foundKey = Object.keys(models).find(k => target.match(k));
+          const q = foundKey ? models[foundKey] : { remainingPercent: 100, usagePercent: 0 };
+
           if (q.inCooldown) isAnyCooldown = true;
           if (q.isSoftQuotaExceeded) isAnyExhausted = true;
 
@@ -345,12 +355,10 @@
           if (rem <= 10) fillClass = 'fill-danger';
           else if (rem <= 30) fillClass = 'fill-warning';
 
-          const displayName = mName.replace(/^gemini-/, '').replace(/^claude-/, '');
-
           return `
             <div class="model-quota">
               <div class="model-label">
-                <span class="model-name">${displayName}</span>
+                <span class="model-name">${target.name}</span>
                 <span class="model-percent">${rem}% livre</span>
               </div>
               <div class="progress-bar-bg">
