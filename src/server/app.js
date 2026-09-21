@@ -128,21 +128,38 @@ export function createServer() {
   });
 
   // 3. Catálogo de Modelos (para validação do Claude Code, Cursor, Aider)
-  app.get('/v1/models', (req, res) => {
-    const config = configManager.get();
-    const modelList = [
-      'gemini-3.1-pro-high',
-      'gemini-3.8-flash',
-      'claude-opus-4-6-thinking',
-      'claude-sonnet-4-6',
-      'claude-3-7-sonnet',
-      'claude-3-5-sonnet',
-      'claude-3-5-haiku'
-    ];
+  const allKnownModels = [
+    'claude-sonnet-5',
+    'claude-sonnet-5-20260201',
+    'claude-opus-5',
+    'claude-haiku-5',
+    'claude-3-7-sonnet-latest',
+    'claude-3-7-sonnet',
+    'claude-3-5-sonnet-latest',
+    'claude-3-5-sonnet',
+    'claude-3-5-haiku-latest',
+    'claude-3-5-haiku',
+    'claude-opus-4-6-thinking',
+    'claude-sonnet-4-6',
+    'gemini-3.1-pro-high',
+    'gemini-3.8-flash',
+    'gemini-pro',
+    'gemini-flash'
+  ];
 
+  app.get('/v1/models/:model', (req, res) => {
+    res.json({
+      id: req.params.model,
+      object: 'model',
+      created: 1700000000,
+      owned_by: 'constellation'
+    });
+  });
+
+  app.get('/v1/models', (req, res) => {
     res.json({
       object: 'list',
-      data: modelList.map(id => ({
+      data: allKnownModels.map(id => ({
         id,
         object: 'model',
         created: 1700000000,

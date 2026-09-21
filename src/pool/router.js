@@ -16,6 +16,13 @@ export class SmartRouter {
     }
 
     const cleanModel = requestedModel.toLowerCase().trim();
+
+    // Se o cliente enviar qualquer modelo Claude (ex: claude-sonnet-5, claude-3-7-sonnet, sonnet, etc.),
+    // honramos o modelo ativo selecionado pelo usuário no Dashboard!
+    if (config.defaultModel && (cleanModel.includes('claude') || cleanModel.includes('sonnet') || cleanModel.includes('opus') || cleanModel.includes('haiku'))) {
+      return config.defaultModel;
+    }
+
     if (config.modelAliases[cleanModel]) {
       return config.modelAliases[cleanModel];
     }

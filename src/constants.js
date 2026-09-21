@@ -63,6 +63,10 @@ export const DEFAULT_CONFIG = {
     'gemini-flash': 'gemini-3.8-flash',
     'gemini-3-flash-agent': 'gemini-3.8-flash',
     // Claude
+    'claude-sonnet-5': 'gemini-3.1-pro-high',
+    'claude-sonnet-5-20260201': 'gemini-3.1-pro-high',
+    'claude-opus-5': 'claude-opus-4-6-thinking',
+    'claude-haiku-5': 'gemini-3.8-flash',
     'claude-opus-4-6': 'claude-opus-4-6-thinking',
     'claude-opus-4-6-thinking': 'claude-opus-4-6-thinking',
     'claude-opus': 'claude-opus-4-6-thinking',
