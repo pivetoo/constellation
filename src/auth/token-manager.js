@@ -3,10 +3,14 @@
  */
 import fs from 'fs/promises';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import chalk from 'chalk';
 import { createOAuthClient } from './oauth.js';
 
-const KEYS_FILE = path.resolve(process.cwd(), 'keys.json');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const ROOT_DIR = path.resolve(__dirname, '../..');
+const KEYS_FILE = path.resolve(ROOT_DIR, 'keys.json');
 
 export class TokenManager {
   constructor() {

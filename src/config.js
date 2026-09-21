@@ -2,10 +2,13 @@
  * Constellation - Gerenciador de Configuração
  */
 import fs from 'fs/promises';
-import path from 'path';
+import { fileURLToPath } from 'url';
 import { DEFAULT_CONFIG } from './constants.js';
 
-const CONFIG_FILE = path.resolve(process.cwd(), 'config.json');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const ROOT_DIR = path.resolve(__dirname, '..');
+const CONFIG_FILE = path.resolve(ROOT_DIR, 'config.json');
 
 class ConfigManager {
   constructor() {
