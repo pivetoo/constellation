@@ -19,6 +19,8 @@ import {
   streamAnthropicResponse,
   streamOpenAIResponse
 } from '../translator/sse-streamer.js';
+import { getAuthorizationUrl, ensureCallbackServer } from '../auth/oauth.js';
+import { tokenManager } from '../auth/token-manager.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,6 +48,28 @@ export function createServer() {
     try {
       const accountsStatus = await accountPool.getPoolStatus();
       res.json({ accounts: accountsStatus });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // 2.1 Iniciar login Google pelo navegador (Popup do Dashboard)
+  app.get('/auth/start', async (req, res) => {
+    try {
+      await ensureCallbackServer();
+      const authUrl = getAuthorizationUrl();
+      res.redirect(authUrl);
+    } catch (err) {
+      res.status(500).send('Erro ao iniciar login: ' + err.message);
+    }
+  });
+
+  // 2.2 Remover conta diretamente pelo Dashboard
+  app.delete('/api/accounts/:id', async (req, res) => {
+    try {
+      const removed = await tokenManager.removeAccount(req.params.id);
+      await accountPool.refreshAccounts();
+      res.json({ success: removed });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
@@ -356,6 +380,7 @@ export function createServer() {
 export async function startServer(port = 6012) {
   await configManager.load();
   await accountPool.refreshAccounts();
+  await ensureCallbackServer();
 
   const app = createServer();
   return new Promise((resolve) => {

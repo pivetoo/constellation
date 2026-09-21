@@ -213,6 +213,39 @@
       box-shadow: 0 0 10px rgba(88, 166, 255, 0.3);
     }
 
+    .add-account-btn {
+      background: #238636;
+      border: 1px solid #2ea043;
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .add-account-btn:hover {
+      background: #2ea043;
+      box-shadow: 0 0 10px rgba(46, 160, 67, 0.4);
+    }
+    .remove-btn {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 4px;
+      border-radius: 4px;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+    }
+    .remove-btn:hover {
+      opacity: 1;
+      background: rgba(248, 81, 73, 0.15);
+    }
+
     footer {
       text-align: center;
       margin-top: 40px;
@@ -231,7 +264,12 @@
           <p style="font-size: 13px; color: var(--text-muted);">Smart Load Balancer & Gemini Router</p>
         </div>
       </div>
-      <div class="badge" id="refresh-indicator">Atualizando ao vivo (15s)...</div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <button class="add-account-btn" onclick="openLoginPopup()">
+          ➕ Conectar Conta Google
+        </button>
+        <div class="badge" id="refresh-indicator">Atualizando ao vivo (15s)...</div>
+      </div>
     </header>
 
     <!-- Seletor de Modelo Ativo -->
@@ -322,8 +360,11 @@
       const container = document.getElementById('accounts-container');
       if (accounts.length === 0) {
         container.innerHTML = `
-          <div style="color: var(--text-muted); grid-column: 1 / -1; text-align: center; padding: 40px;">
-            Nenhuma conta conectada. Execute <code>constellation login</code> no terminal para adicionar suas contas.
+          <div style="color: var(--text-muted); grid-column: 1 / -1; text-align: center; padding: 40px; background: var(--card-bg); border-radius: 12px; border: 1px dashed var(--card-border);">
+            <p style="font-size: 16px; margin-bottom: 14px; color: #fff;">Nenhuma conta conectada no seu pool.</p>
+            <button class="add-account-btn" style="font-size: 14px; padding: 10px 20px;" onclick="openLoginPopup()">
+              ➕ Conectar Primeira Conta Google
+            </button>
           </div>
         `;
         document.getElementById('stat-ready-accounts').innerText = 0;
@@ -391,9 +432,12 @@
           <div class="account-card ${cardClass}">
             <div class="card-header">
               <span class="account-email">${acc.email || `Conta #${index + 1}`}</span>
-              <span class="status-pill ${pillClass}">${pillText}</span>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="status-pill ${pillClass}">${pillText}</span>
+                <button class="remove-btn" title="Desconectar conta do pool" onclick="removeAccount('${acc.id}', '${acc.email}')">🗑️</button>
+              </div>
             </div>
-            ${modelsHtml || '<div style="color: var(--text-muted); font-size: 13px;">Aguardando primeira consulta de cota...</div>'}
+            ${modelsHtml}
           </div>
         `;
       }).join('');
@@ -472,6 +516,31 @@
       }).catch(err => {
         console.error('Falha ao copiar:', err);
       });
+    }
+
+    function openLoginPopup() {
+      const w = 550;
+      const h = 680;
+      const left = (screen.width - w) / 2;
+      const top = (screen.height - h) / 2;
+      window.open('/auth/start', 'google_login', `width=${w},height=${h},top=${top},left=${left}`);
+    }
+
+    async function removeAccount(id, email) {
+      if (!confirm(`Deseja realmente desconectar e remover a conta "${email}" do pool?`)) {
+        return;
+      }
+      try {
+        const res = await fetch('/api/accounts/' + encodeURIComponent(id), { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          loadStatus();
+        } else {
+          alert('Não foi possível remover a conta.');
+        }
+      } catch (err) {
+        alert('Erro ao remover conta: ' + err.message);
+      }
     }
 
     loadConfig();
