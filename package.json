@@ -9,6 +9,7 @@
   },
   "scripts": {
     "start": "node bin/constellation.js serve",
+    "stop": "node bin/constellation.js stop",
     "login": "node bin/constellation.js login",
     "accounts": "node bin/constellation.js accounts",
     "claude": "node bin/constellation.js claude"

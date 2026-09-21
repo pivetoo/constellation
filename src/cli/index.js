@@ -273,5 +273,27 @@ program
     });
   });
 
+// 7. Comando STOP (encerra o servidor Constellation)
+program
+  .command('stop')
+  .description('Encerrar o servidor Constellation em execução')
+  .action(async () => {
+    const config = await configManager.load();
+    const port = config.port || 6012;
+    const { execSync } = await import('child_process');
+
+    try {
+      if (process.platform === 'win32') {
+        execSync(`powershell -WindowStyle Hidden -Command "Get-NetTCPConnection -LocalPort ${port} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"`);
+      } else {
+        execSync(`lsof -ti:${port} | xargs kill -9 2>/dev/null || true`);
+      }
+      console.log(chalk.green(`✓ Servidor Constellation na porta ${port} encerrado com sucesso.`));
+    } catch (err) {
+      console.log(chalk.yellow(`[!] Nenhum servidor ativo encontrado na porta ${port}.`));
+    }
+  });
+
 program.parse(process.argv);
+
 
