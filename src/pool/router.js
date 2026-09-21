@@ -52,6 +52,12 @@ export class SmartRouter {
         continue;
       }
 
+      // Ignora conta se requer verificação no Google
+      const accData = accountPool.getAccountData(acc.id);
+      if (accData.needsVerification) {
+        continue;
+      }
+
       // Obtém as cotas da conta
       const quotas = await accountPool.getAccountQuota(acc);
       const modelQuota = quotas[targetModel];
@@ -92,7 +98,7 @@ export class SmartRouter {
       const resetMsg = resetTimes.length > 0
         ? `\nHorários previstos para reset:\n${resetTimes.map(r => `  - ${r.email}: ${r.resetTimeFormatted}`).join('\n')}`
         : '';
-      throw new Error(`Todas as ${accounts.length} contas atingiram o limite de 95% para o modelo "${targetModel}".${resetMsg}`);
+      throw new Error(`Todas as contas disponíveis atingiram o limite ou estão em cooldown para o modelo "${targetModel}".${resetMsg}`);
     }
 
     // Ordena da conta com MAIOR cota restante para a de menor cota
@@ -137,11 +143,17 @@ export class SmartRouter {
                             err.message.includes('Quota') ||
                             err.message.includes('Soft Quota');
 
-        if (isRateLimit) {
+        const isAuthOrVerify = err.message.includes('401') ||
+                               err.message.includes('403') ||
+                               err.message.includes('VALIDATION_REQUIRED') ||
+                               err.message.includes('Verify your account') ||
+                               err.message.includes('PERMISSION_DENIED');
+
+        if (isRateLimit || isAuthOrVerify) {
+          const reasonType = isAuthOrVerify ? 'Auth/Verificação necessária' : 'Limite de cota';
           console.log(
-            chalk.yellow(`[Router Failover] Limite atingido na conta ${selectedAccount.email}. Chaveando automaticamente...`)
+            chalk.yellow(`[Router Failover] Problema na conta ${selectedAccount.email} (${reasonType}). Chaveando automaticamente...`)
           );
-          // Coloca a conta em cooldown por 15 minutos
           accountPool.setCooldown(selectedAccount.id, targetModel, 15 * 60 * 1000, err.message);
         } else {
           // Erro de outro tipo (ex: rede, erro de sintaxe)
@@ -151,7 +163,7 @@ export class SmartRouter {
       }
     }
 
-    throw new Error(`Todas as contas falharam após ${attempts} tentativas. Último erro: ${lastError?.message}`);
+    throw new Error(`Todas as contas do pool falharam para o modelo "${targetModel}". Último erro: ${lastError?.message}`);
   }
 }
 

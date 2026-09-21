@@ -127,8 +127,15 @@ program
   .command('serve')
   .description('Iniciar o servidor de proxy local e o painel web')
   .option('-p, --port <number>', 'Porta do servidor (padrão: 6012)', parseInt)
+  .option('-t, --theme <type>', 'Tema inicial do painel web: dark ou white (padrão: dark)')
   .action(async (options) => {
     const config = await configManager.load();
+    const envTheme = process.env.CONSTELLATION_THEME;
+    const requestedTheme = options.theme || envTheme;
+    if (requestedTheme) {
+      const normalized = (requestedTheme.toLowerCase() === 'white' || requestedTheme.toLowerCase() === 'light') ? 'white' : 'dark';
+      await configManager.update({ theme: normalized });
+    }
     const port = options.port || config.port || 6012;
     await startServer(port);
   });

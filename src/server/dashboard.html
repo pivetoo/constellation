@@ -5,17 +5,80 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Constellation - Smart Pool Dashboard</title>
   <style>
-    :root {
+    :root, [data-theme="dark"] {
       --bg: #090a0f;
       --card-bg: #12151f;
       --card-border: #1e2433;
+      --card-border-hover: #2f384f;
+      --card-shadow: none;
       --text: #e6edf3;
+      --text-heading: #ffffff;
       --text-muted: #8b949e;
       --accent: #58a6ff;
+      --badge-bg: #1f293d;
+      --badge-text: #58a6ff;
+      --code-bg: #0d1117;
+      --code-border: #212636;
+      --code-text: #79c0ff;
+      --copy-btn-bg: #212636;
+      --btn-bg: #1c212e;
+      --btn-border: #2d3548;
+      --btn-text: #e6edf3;
+      --btn-hover-bg: #242b3d;
+      --btn-active-bg: #1f3a5f;
+      --btn-active-border: #58a6ff;
+      --btn-active-text: #ffffff;
       --success: #3fb950;
       --warning: #d29922;
       --danger: #f85149;
       --cooldown: #bc8cff;
+      --progress-bg: #212636;
+      --pill-ready-bg: #1b382b;
+      --pill-cooldown-bg: #351c4a;
+      --pill-exhausted-bg: #3d1c1a;
+      --summary-bg: #161b22;
+      --summary-border: #30363d;
+      --toggle-btn-bg: #212636;
+      --toggle-btn-border: #30363d;
+      --toggle-btn-text: #e6edf3;
+    }
+
+    [data-theme="white"], [data-theme="light"] {
+      --bg: #f6f8fa;
+      --card-bg: #ffffff;
+      --card-border: #d0d7de;
+      --card-border-hover: #b0b8c4;
+      --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      --text: #1f2328;
+      --text-heading: #1f2328;
+      --text-muted: #656d76;
+      --accent: #0969da;
+      --badge-bg: #ddf4ff;
+      --badge-text: #0969da;
+      --code-bg: #f6f8fa;
+      --code-border: #d0d7de;
+      --code-text: #0969da;
+      --copy-btn-bg: #ffffff;
+      --btn-bg: #f6f8fa;
+      --btn-border: #d0d7de;
+      --btn-text: #24292f;
+      --btn-hover-bg: #eaeef2;
+      --btn-active-bg: #ddf4ff;
+      --btn-active-border: #0969da;
+      --btn-active-text: #0969da;
+      --success: #1a7f37;
+      --warning: #9a6700;
+      --danger: #cf222e;
+      --cooldown: #8250df;
+      --progress-bg: #eaeef2;
+      --pill-ready-bg: #dafbe1;
+      --pill-cooldown-bg: #fbefff;
+      --pill-exhausted-bg: #ffebe9;
+      --summary-bg: #f6f8fa;
+      --summary-border: #d0d7de;
+      --toggle-btn-bg: #ffffff;
+      --toggle-btn-border: #d0d7de;
+      --toggle-btn-text: #24292f;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -24,6 +87,7 @@
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       padding: 30px 20px;
+      transition: background-color 0.2s ease, color 0.2s ease;
     }
 
     .container { max-width: 1100px; margin: 0 auto; }
@@ -34,17 +98,20 @@
       margin-bottom: 30px;
       padding-bottom: 20px;
       border-bottom: 1px solid var(--card-border);
+      gap: 16px;
+      flex-wrap: wrap;
     }
     .brand { display: flex; align-items: center; gap: 12px; }
-    .brand h1 { font-size: 26px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+    .brand h1 { font-size: 26px; font-weight: 700; color: var(--text-heading); letter-spacing: -0.5px; }
     .brand span { color: var(--accent); }
     .badge {
-      background: #1f293d;
-      color: var(--accent);
+      background: var(--badge-bg);
+      color: var(--badge-text);
       padding: 4px 10px;
       border-radius: 12px;
       font-size: 12px;
       font-weight: 600;
+      border: 1px solid var(--card-border);
     }
 
     .quick-setup {
@@ -53,6 +120,8 @@
       border-radius: 12px;
       padding: 18px 24px;
       margin-bottom: 30px;
+      box-shadow: var(--card-shadow);
+      transition: background-color 0.2s ease, border-color 0.2s ease;
     }
     .quick-setup h3 { font-size: 15px; margin-bottom: 10px; color: var(--accent); }
     .code-wrapper {
@@ -62,23 +131,23 @@
     }
     .code-block {
       flex: 1;
-      background: #0d1117;
+      background: var(--code-bg);
       padding: 12px 14px;
       padding-right: 100px;
       border-radius: 6px;
       font-family: "SFMono-Regular", Consolas, Menlo, monospace;
       font-size: 13px;
-      color: #79c0ff;
+      color: var(--code-text);
       overflow-x: auto;
-      border: 1px solid #212636;
+      border: 1px solid var(--code-border);
       white-space: nowrap;
     }
     .copy-btn {
       position: absolute;
       right: 8px;
-      background: #212636;
-      border: 1px solid #30363d;
-      color: #c9d1d9;
+      background: var(--copy-btn-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text);
       padding: 6px 12px;
       border-radius: 6px;
       cursor: pointer;
@@ -90,9 +159,9 @@
       gap: 5px;
     }
     .copy-btn:hover {
-      background: #30363d;
-      color: #fff;
-      border-color: #58a6ff;
+      background: var(--btn-hover-bg);
+      color: var(--text-heading);
+      border-color: var(--accent);
     }
     .copy-btn.copied {
       background: #238636;
@@ -111,9 +180,11 @@
       border: 1px solid var(--card-border);
       border-radius: 10px;
       padding: 16px;
+      box-shadow: var(--card-shadow);
+      transition: background-color 0.2s ease, border-color 0.2s ease;
     }
     .stat-card .label { font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
-    .stat-card .value { font-size: 24px; font-weight: 700; color: #fff; }
+    .stat-card .value { font-size: 24px; font-weight: 700; color: var(--text-heading); }
 
     .accounts-grid {
       display: grid;
@@ -125,10 +196,11 @@
       border: 1px solid var(--card-border);
       border-radius: 12px;
       padding: 20px;
-      transition: transform 0.2s, border-color 0.2s;
+      box-shadow: var(--card-shadow);
+      transition: transform 0.2s, border-color 0.2s, background-color 0.2s;
     }
     .account-card:hover {
-      border-color: #2f384f;
+      border-color: var(--card-border-hover);
       transform: translateY(-2px);
     }
     .account-card.cooldown { border-left: 4px solid var(--cooldown); }
@@ -143,7 +215,7 @@
     .account-email {
       font-weight: 600;
       font-size: 15px;
-      color: #fff;
+      color: var(--text-heading);
       word-break: break-all;
     }
     .status-pill {
@@ -153,9 +225,9 @@
       border-radius: 10px;
       text-transform: uppercase;
     }
-    .status-pill.ready { background: #1b382b; color: var(--success); }
-    .status-pill.cooldown { background: #351c4a; color: var(--cooldown); }
-    .status-pill.exhausted { background: #3d1c1a; color: var(--danger); }
+    .status-pill.ready { background: var(--pill-ready-bg); color: var(--success); }
+    .status-pill.cooldown { background: var(--pill-cooldown-bg); color: var(--cooldown); }
+    .status-pill.exhausted { background: var(--pill-exhausted-bg); color: var(--danger); }
 
     .model-quota {
       margin-top: 14px;
@@ -167,10 +239,10 @@
       margin-bottom: 6px;
     }
     .model-name { color: var(--text-muted); font-weight: 500; }
-    .model-percent { font-weight: 700; color: #fff; }
+    .model-percent { font-weight: 700; color: var(--text-heading); }
 
     .progress-bar-bg {
-      background: #212636;
+      background: var(--progress-bg);
       border-radius: 4px;
       height: 8px;
       overflow: hidden;
@@ -192,9 +264,9 @@
     }
 
     .model-btn {
-      background: #1c212e;
-      border: 1px solid #2d3548;
-      color: var(--text);
+      background: var(--btn-bg);
+      border: 1px solid var(--btn-border);
+      color: var(--btn-text);
       padding: 10px 18px;
       border-radius: 8px;
       cursor: pointer;
@@ -204,13 +276,32 @@
     }
     .model-btn:hover {
       border-color: var(--accent);
-      background: #242b3d;
+      background: var(--btn-hover-bg);
     }
     .model-btn.active {
-      background: #1f3a5f;
+      background: var(--btn-active-bg);
+      border-color: var(--btn-active-border);
+      color: var(--btn-active-text);
+      box-shadow: 0 0 10px rgba(88, 166, 255, 0.25);
+    }
+
+    .theme-toggle-btn {
+      background: var(--toggle-btn-bg);
+      border: 1px solid var(--toggle-btn-border);
+      color: var(--toggle-btn-text);
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .theme-toggle-btn:hover {
       border-color: var(--accent);
-      color: #fff;
-      box-shadow: 0 0 10px rgba(88, 166, 255, 0.3);
+      color: var(--accent);
     }
 
     .add-account-btn {
@@ -233,17 +324,18 @@
     }
     .remove-btn {
       background: transparent;
-      border: none;
+      border: 1px solid transparent;
       cursor: pointer;
       font-size: 14px;
       padding: 4px;
       border-radius: 4px;
       opacity: 0.6;
-      transition: opacity 0.2s;
+      transition: all 0.2s;
     }
     .remove-btn:hover {
       opacity: 1;
       background: rgba(248, 81, 73, 0.15);
+      border-color: rgba(248, 81, 73, 0.3);
     }
 
     footer {
@@ -264,7 +356,10 @@
           <p style="font-size: 13px; color: var(--text-muted);">Smart Load Balancer & Gemini Router</p>
         </div>
       </div>
-      <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <button class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Alternar entre tema Claro (White) e Escuro (Dark)">
+          ☀️ Tema White
+        </button>
         <button class="add-account-btn" style="background: #1f6feb; border-color: #388bfd;" onclick="forceRefreshQuota()">
           🔄 Atualizar Cotas
         </button>
@@ -504,11 +599,43 @@
       document.getElementById('stat-cooldown-accounts').innerText = cooldownCount;
     }
 
+    function applyTheme(theme, saveServer = false) {
+      const normalized = (theme === 'white' || theme === 'light') ? 'white' : 'dark';
+      document.documentElement.setAttribute('data-theme', normalized);
+      localStorage.setItem('constellation-theme', normalized);
+
+      const btn = document.getElementById('theme-toggle-btn');
+      if (btn) {
+        btn.innerHTML = normalized === 'white' ? '🌙 Tema Dark' : '☀️ Tema White';
+      }
+
+      if (saveServer) {
+        fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ theme: normalized })
+        }).catch(() => {});
+      }
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      const next = current === 'white' ? 'dark' : 'white';
+      applyTheme(next, true);
+    }
+
+    const initialTheme = localStorage.getItem('constellation-theme') || 'dark';
+    applyTheme(initialTheme, false);
+
     async function loadConfig() {
       try {
         const res = await fetch('/api/config');
         const config = await res.json();
         updateModelUI(config.defaultModel);
+        const savedTheme = localStorage.getItem('constellation-theme');
+        if (!savedTheme && config.theme) {
+          applyTheme(config.theme, false);
+        }
       } catch (err) {
         console.error('Falha ao carregar configuração:', err);
       }

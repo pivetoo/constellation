@@ -44,6 +44,7 @@ export const ANTIGRAVITY_HEADERS = {
 
 export const DEFAULT_CONFIG = {
   port: 6012,
+  theme: 'dark', // 'dark' ou 'white'
   softQuotaLimit: 0.95, // 95% de uso (ou <= 5% restante) ativa cooldown
   defaultModel: 'claude-sonnet-4-6',
   // Os 4 modelos principais suportados

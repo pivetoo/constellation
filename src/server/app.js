@@ -83,45 +83,54 @@ export function createServer() {
 
   app.post('/api/config', async (req, res) => {
     try {
-      const { defaultModel } = req.body;
-      let newAliases = {};
+      const { defaultModel, theme } = req.body;
+      const updates = {};
 
-      if (defaultModel === 'claude-opus-4-6-thinking') {
-        newAliases = {
-          'claude-3-7-sonnet-latest': 'claude-opus-4-6-thinking',
-          'claude-3-7-sonnet': 'claude-opus-4-6-thinking',
-          'claude-3-5-sonnet': 'claude-opus-4-6-thinking'
-        };
-      } else if (defaultModel === 'claude-sonnet-4-6') {
-        newAliases = {
-          'claude-3-7-sonnet-latest': 'claude-sonnet-4-6',
-          'claude-3-7-sonnet': 'claude-sonnet-4-6',
-          'claude-3-5-sonnet': 'claude-sonnet-4-6'
-        };
-      } else if (defaultModel === 'gemini-3.1-pro-high') {
-        newAliases = {
-          'claude-3-7-sonnet-latest': 'gemini-3.1-pro-high',
-          'claude-3-7-sonnet': 'gemini-3.1-pro-high',
-          'claude-3-5-sonnet': 'gemini-3.1-pro-high'
-        };
-      } else if (defaultModel === 'gemini-3.8-flash' || defaultModel === 'gemini-3-flash-agent') {
-        newAliases = {
-          'claude-3-7-sonnet-latest': 'gemini-3.8-flash',
-          'claude-3-7-sonnet': 'gemini-3.8-flash',
-          'claude-3-5-sonnet': 'gemini-3.8-flash',
-          'claude-3-5-haiku': 'gemini-3.8-flash'
-        };
+      if (theme) {
+        updates.theme = (theme === 'white' || theme === 'light') ? 'white' : 'dark';
+        console.log(chalk.magenta(`[Config] Tema alterado para: ${updates.theme}`));
       }
 
-      const updated = await configManager.update({
-        defaultModel,
-        modelAliases: {
+      if (defaultModel) {
+        updates.defaultModel = defaultModel;
+        let newAliases = {};
+
+        if (defaultModel === 'claude-opus-4-6-thinking') {
+          newAliases = {
+            'claude-3-7-sonnet-latest': 'claude-opus-4-6-thinking',
+            'claude-3-7-sonnet': 'claude-opus-4-6-thinking',
+            'claude-3-5-sonnet': 'claude-opus-4-6-thinking'
+          };
+        } else if (defaultModel === 'claude-sonnet-4-6') {
+          newAliases = {
+            'claude-3-7-sonnet-latest': 'claude-sonnet-4-6',
+            'claude-3-7-sonnet': 'claude-sonnet-4-6',
+            'claude-3-5-sonnet': 'claude-sonnet-4-6'
+          };
+        } else if (defaultModel === 'gemini-3.1-pro-high') {
+          newAliases = {
+            'claude-3-7-sonnet-latest': 'gemini-3.1-pro-high',
+            'claude-3-7-sonnet': 'gemini-3.1-pro-high',
+            'claude-3-5-sonnet': 'gemini-3.1-pro-high'
+          };
+        } else if (defaultModel === 'gemini-3.8-flash' || defaultModel === 'gemini-3-flash-agent') {
+          newAliases = {
+            'claude-3-7-sonnet-latest': 'gemini-3.8-flash',
+            'claude-3-7-sonnet': 'gemini-3.8-flash',
+            'claude-3-5-sonnet': 'gemini-3.8-flash',
+            'claude-3-5-haiku': 'gemini-3.8-flash'
+          };
+        }
+
+        updates.modelAliases = {
           ...configManager.get().modelAliases,
           ...newAliases
-        }
-      });
+        };
 
-      console.log(chalk.magenta(`[Config] Modelo padrão alterado pelo Dashboard para: ${defaultModel}`));
+        console.log(chalk.magenta(`[Config] Modelo padrão alterado pelo Dashboard para: ${defaultModel}`));
+      }
+
+      const updated = await configManager.update(updates);
       res.json({ success: true, config: updated });
     } catch (err) {
       res.status(500).json({ error: err.message });
