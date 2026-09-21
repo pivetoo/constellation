@@ -297,10 +297,10 @@
     <div class="quick-setup">
       <h3>🚀 Como abrir o Claude Code sem digitar variáveis de ambiente:</h3>
       <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">
-        Opção 1 (Atalho do Constellation):
+        Opção 1 (Comando Global de 1 palavra - Funciona em qualquer diretório):
       </p>
       <div class="code-wrapper" style="margin-bottom: 14px;">
-        <div class="code-block" id="code-opt1">node C:\development\studies\constellation\bin\constellation.js claude</div>
+        <div class="code-block" id="code-opt1">cclaude</div>
         <button class="copy-btn" onclick="copyCode('code-opt1', this)">📋 Copiar</button>
       </div>
 
@@ -378,8 +378,8 @@
         let isAnyExhausted = false;
 
         const TARGET_MODELS = [
-          { match: (k) => k.includes('gemini-3.1-pro') || k.includes('gemini-3-pro'), name: '🧠 Gemini 3.1 Pro' },
-          { match: (k) => k.includes('gemini-3.8-flash') || k.includes('gemini-3-flash'), name: '⚡ Gemini 3.8 Flash' },
+          { match: (k) => k.includes('gemini-3.1-pro') || k.includes('gemini-3-pro') || k.includes('gemini-pro-agent'), name: '🧠 Gemini 3.1 Pro' },
+          { match: (k) => k.includes('gemini-3.8-flash') || k.includes('gemini-3.6-flash') || k.includes('gemini-3-flash'), name: '⚡ Gemini 3.8 Flash' },
           { match: (k) => k.includes('claude-opus'), name: '🎭 Claude Opus 4.6' },
           { match: (k) => k.includes('claude-sonnet'), name: '🖋️ Claude Sonnet 4.6' }
         ];

@@ -200,39 +200,92 @@ export function createServer() {
         chalk.gray(`, Stream=${stream}, Ferramentas=${tools ? tools.length : 0}`)
       );
 
-      await smartRouter.executeWithFailover(targetModel, async (account, resolvedModel) => {
-        const url = `${API_ENDPOINTS.CLOUD_CODE}/v1internal:streamGenerateContent?alt=sse`;
-        const headers = {
-          'Authorization': `Bearer ${account.access_token}`,
-          'Content-Type': 'application/json',
-          ...ANTIGRAVITY_HEADERS.getHeaders()
-        };
+function resolveActualGoogleModel(model) {
+  if (!model) return 'gemini-pro-agent';
+  const clean = model.toLowerCase();
+  if (clean.includes('claude-opus') || clean.includes('opus')) {
+    return 'claude-opus-4-6-thinking';
+  }
+  if (clean.includes('claude-sonnet') || clean.includes('sonnet')) {
+    return 'claude-sonnet-4-6';
+  }
+  if (clean.includes('gemini-3.8-flash') || clean.includes('gemini-3-flash') || clean.includes('gemini-flash') || clean.includes('haiku')) {
+    return 'gemini-3.6-flash-high';
+  }
+  if (clean.includes('gemini-3.1-pro') || clean.includes('gemini-pro') || clean.includes('gemini')) {
+    return 'gemini-pro-agent';
+  }
+  return model;
+}
 
+function buildThinkingConfig(actualModel) {
+  if (actualModel.includes('opus') || actualModel.includes('thinking')) {
+    return { includeThoughts: true, thinkingBudget: 1024 };
+  }
+  if (actualModel.includes('gemini-pro') || actualModel.includes('gemini-3.6') || actualModel.includes('agent')) {
+    return { includeThoughts: true, thinkingLevel: 'high' };
+  }
+  return undefined;
+}
+
+async function callGoogleCodeAssist(account, requestBody) {
+  const headers = {
+    'Authorization': `Bearer ${account.access_token}`,
+    'Content-Type': 'application/json',
+    ...ANTIGRAVITY_HEADERS.getHeaders()
+  };
+
+  const endpoints = [
+    `${API_ENDPOINTS.CLOUD_CODE}/v1internal:streamGenerateContent?alt=sse`,
+    `${API_ENDPOINTS.PROD_CLOUD_CODE}/v1internal:streamGenerateContent?alt=sse`
+  ];
+
+  let lastError = null;
+  for (const ep of endpoints) {
+    try {
+      const res = await fetch(ep, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody)
+      });
+      if (res.ok) return res;
+      const errText = await res.text();
+      lastError = new Error(`Google HTTP ${res.status}: ${errText}`);
+      if (res.status === 404 || res.status >= 500) continue;
+      throw lastError;
+    } catch (err) {
+      lastError = err;
+      if (err.message.includes('404') || err.message.includes('fetch failed')) continue;
+      throw err;
+    }
+  }
+  throw lastError;
+}
+
+      await smartRouter.executeWithFailover(targetModel, async (account, resolvedModel) => {
+        const actualGoogleModel = resolveActualGoogleModel(resolvedModel);
+        const thinkingConfig = buildThinkingConfig(actualGoogleModel);
+        const finalMaxTokens = thinkingConfig?.thinkingBudget
+          ? Math.max(max_tokens || 8192, 4096)
+          : (max_tokens || 8192);
+
+        const projectId = account.projectId || API_ENDPOINTS.DEFAULT_PROJECT_ID;
         const requestBody = {
-          project: API_ENDPOINTS.DEFAULT_PROJECT_ID,
-          model: resolvedModel,
+          project: projectId,
+          model: actualGoogleModel,
           request: {
             contents,
             tools: geminiTools,
             systemInstruction: systemPrompt ? { parts: [{ text: systemPrompt }] } : undefined,
             generationConfig: {
               temperature,
-              maxOutputTokens: max_tokens,
-              thinkingConfig: { includeThoughts: true, thinkingBudget: 1024 }
+              maxOutputTokens: finalMaxTokens,
+              ...(thinkingConfig ? { thinkingConfig } : {})
             }
           }
         };
 
-        const googleRes = await fetch(url, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(requestBody)
-        });
-
-        if (!googleRes.ok) {
-          const errText = await googleRes.text();
-          throw new Error(`Google HTTP ${googleRes.status}: ${errText}`);
-        }
+        const googleRes = await callGoogleCodeAssist(account, requestBody);
 
         if (stream) {
           await streamAnthropicResponse(googleRes.body, res, requestedModel || resolvedModel);
@@ -310,37 +363,25 @@ export function createServer() {
       );
 
       await smartRouter.executeWithFailover(targetModel, async (account, resolvedModel) => {
-        const url = `${API_ENDPOINTS.CLOUD_CODE}/v1internal:streamGenerateContent?alt=sse`;
-        const headers = {
-          'Authorization': `Bearer ${account.access_token}`,
-          'Content-Type': 'application/json',
-          ...ANTIGRAVITY_HEADERS.getHeaders()
-        };
+        const actualGoogleModel = resolveActualGoogleModel(resolvedModel);
+        const thinkingConfig = buildThinkingConfig(actualGoogleModel);
+        const projectId = account.projectId || API_ENDPOINTS.DEFAULT_PROJECT_ID;
 
         const requestBody = {
-          project: API_ENDPOINTS.DEFAULT_PROJECT_ID,
-          model: resolvedModel,
+          project: projectId,
+          model: actualGoogleModel,
           request: {
             contents,
             systemInstruction: systemPrompt ? { parts: [{ text: systemPrompt }] } : undefined,
             generationConfig: {
               temperature,
               maxOutputTokens: 8192,
-              thinkingConfig: { includeThoughts: true, thinkingBudget: 1024 }
+              ...(thinkingConfig ? { thinkingConfig } : {})
             }
           }
         };
 
-        const googleRes = await fetch(url, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(requestBody)
-        });
-
-        if (!googleRes.ok) {
-          const errText = await googleRes.text();
-          throw new Error(`Google HTTP ${googleRes.status}: ${errText}`);
-        }
+        const googleRes = await callGoogleCodeAssist(account, requestBody);
 
         if (stream) {
           await streamOpenAIResponse(googleRes.body, res, requestedModel || resolvedModel);

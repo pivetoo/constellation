@@ -17,9 +17,10 @@ export const GOOGLE_OAUTH = {
 };
 
 export const API_ENDPOINTS = {
-  CLOUD_CODE: 'https://cloudcode-pa.googleapis.com',
+  CLOUD_CODE: 'https://daily-cloudcode-pa.sandbox.googleapis.com',
+  PROD_CLOUD_CODE: 'https://cloudcode-pa.googleapis.com',
   SANDBOX: 'https://daily-cloudcode-pa.sandbox.googleapis.com',
-  DEFAULT_PROJECT_ID: 'rising-fact-p41fc',
+  DEFAULT_PROJECT_ID: 'aicode-consumers',
   USER_INFO: 'https://www.googleapis.com/oauth2/v2/userinfo'
 };
 
@@ -44,7 +45,7 @@ export const ANTIGRAVITY_HEADERS = {
 export const DEFAULT_CONFIG = {
   port: 6012,
   softQuotaLimit: 0.95, // 95% de uso (ou <= 5% restante) ativa cooldown
-  defaultModel: 'gemini-3.1-pro-high',
+  defaultModel: 'claude-sonnet-4-6',
   // Os 4 modelos principais suportados
   supportedModels: [
     { id: 'gemini-3.1-pro-high', name: 'Gemini 3.1 Pro', icon: '🧠', tag: 'Recomendado' },
@@ -63,8 +64,8 @@ export const DEFAULT_CONFIG = {
     'gemini-flash': 'gemini-3.8-flash',
     'gemini-3-flash-agent': 'gemini-3.8-flash',
     // Claude
-    'claude-sonnet-5': 'gemini-3.1-pro-high',
-    'claude-sonnet-5-20260201': 'gemini-3.1-pro-high',
+    'claude-sonnet-5': 'claude-sonnet-4-6',
+    'claude-sonnet-5-20260201': 'claude-sonnet-4-6',
     'claude-opus-5': 'claude-opus-4-6-thinking',
     'claude-haiku-5': 'gemini-3.8-flash',
     'claude-opus-4-6': 'claude-opus-4-6-thinking',
@@ -73,8 +74,8 @@ export const DEFAULT_CONFIG = {
     'claude-sonnet-4-6': 'claude-sonnet-4-6',
     'claude-sonnet': 'claude-sonnet-4-6',
     // Aliases comuns de Claude Code
-    'claude-3-7-sonnet-latest': 'gemini-3.1-pro-high',
-    'claude-3-7-sonnet': 'gemini-3.1-pro-high',
+    'claude-3-7-sonnet-latest': 'claude-sonnet-4-6',
+    'claude-3-7-sonnet': 'claude-sonnet-4-6',
     'claude-3-5-sonnet-latest': 'claude-sonnet-4-6',
     'claude-3-5-sonnet': 'claude-sonnet-4-6',
     'claude-3-5-haiku-latest': 'gemini-3.8-flash',

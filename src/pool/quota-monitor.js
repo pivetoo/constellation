@@ -9,7 +9,8 @@ export class QuotaMonitor {
    */
   async fetchAccountQuota(accessToken, projectId = API_ENDPOINTS.DEFAULT_PROJECT_ID) {
     try {
-      const response = await fetch(`${API_ENDPOINTS.CLOUD_CODE}/v1internal:fetchAvailableModels`, {
+      const endpoint = API_ENDPOINTS.PROD_CLOUD_CODE || API_ENDPOINTS.CLOUD_CODE;
+      const response = await fetch(`${endpoint}/v1internal:fetchAvailableModels`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -56,6 +57,17 @@ export class QuotaMonitor {
           resetTime,
           resetTimeFormatted
         };
+      }
+
+      // Mapeamento de equivalência para os 4 modelos principais
+      if (result['gemini-pro-agent']) {
+        result['gemini-3.1-pro-high'] = { ...result['gemini-pro-agent'] };
+        result['gemini-3.1-pro'] = { ...result['gemini-pro-agent'] };
+      }
+      if (result['gemini-3.6-flash-high'] || result['gemini-3.8-flash-tiered']) {
+        const flashRef = result['gemini-3.6-flash-high'] || result['gemini-3.8-flash-tiered'];
+        result['gemini-3.8-flash'] = { ...flashRef };
+        result['gemini-3-flash'] = { ...flashRef };
       }
 
       return {

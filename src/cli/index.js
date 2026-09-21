@@ -68,8 +68,8 @@ program
 
         const models = acc.models || {};
         const TARGET_MODELS = [
-          { match: (k) => k.includes('gemini-3.1-pro') || k.includes('gemini-3-pro'), name: 'Gemini 3.1 Pro' },
-          { match: (k) => k.includes('gemini-3.8-flash') || k.includes('gemini-3-flash'), name: 'Gemini 3.8 Flash' },
+          { match: (k) => k.includes('gemini-3.1-pro') || k.includes('gemini-3-pro') || k.includes('gemini-pro-agent'), name: 'Gemini 3.1 Pro' },
+          { match: (k) => k.includes('gemini-3.8-flash') || k.includes('gemini-3.6-flash') || k.includes('gemini-3-flash'), name: 'Gemini 3.8 Flash' },
           { match: (k) => k.includes('claude-opus'), name: 'Claude Opus 4.6' },
           { match: (k) => k.includes('claude-sonnet'), name: 'Claude Sonnet 4.6' }
         ];
@@ -147,20 +147,44 @@ program
       console.log(chalk.gray(`Prompt: "${prompt}"\n`));
 
       const result = await smartRouter.executeWithFailover(model, async (account, resolvedModel) => {
-        const url = `${API_ENDPOINTS.CLOUD_CODE}/v1internal:streamGenerateContent?alt=sse`;
-        const res = await fetch(url, {
+        let actualGoogleModel = resolvedModel;
+        if (resolvedModel.includes('gemini-3.1-pro') || resolvedModel.includes('gemini-pro')) {
+          actualGoogleModel = 'gemini-pro-agent';
+        } else if (resolvedModel.includes('gemini-3.8-flash') || resolvedModel.includes('gemini-3-flash') || resolvedModel.includes('gemini-flash')) {
+          actualGoogleModel = 'gemini-3.6-flash-high';
+        } else if (resolvedModel.includes('claude-opus') || resolvedModel.includes('opus')) {
+          actualGoogleModel = 'claude-opus-4-6-thinking';
+        } else if (resolvedModel.includes('claude-sonnet') || resolvedModel.includes('sonnet')) {
+          actualGoogleModel = 'claude-sonnet-4-6';
+        }
+
+        let thinkingConfig = undefined;
+        if (actualGoogleModel.includes('opus') || actualGoogleModel.includes('thinking')) {
+          thinkingConfig = { includeThoughts: true, thinkingBudget: 1024 };
+        } else if (actualGoogleModel.includes('gemini-pro') || actualGoogleModel.includes('gemini-3.6') || actualGoogleModel.includes('agent')) {
+          thinkingConfig = { includeThoughts: true, thinkingLevel: 'high' };
+        }
+
+        const projectId = account.projectId || API_ENDPOINTS.DEFAULT_PROJECT_ID;
+        const headers = {
+          'Authorization': `Bearer ${account.access_token}`,
+          'Content-Type': 'application/json',
+          ...ANTIGRAVITY_HEADERS.getHeaders(projectId)
+        };
+
+        const res = await fetch(`${API_ENDPOINTS.CLOUD_CODE}/v1internal:streamGenerateContent?alt=sse`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${account.access_token}`,
-            'Content-Type': 'application/json',
-            ...ANTIGRAVITY_HEADERS.getHeaders()
-          },
+          headers,
           body: JSON.stringify({
-            project: API_ENDPOINTS.DEFAULT_PROJECT_ID,
-            model: resolvedModel,
+            project: projectId,
+            model: actualGoogleModel,
             request: {
               contents: [{ role: 'user', parts: [{ text: prompt }] }],
-              generationConfig: { maxOutputTokens: 256, temperature: 0.7 }
+              generationConfig: {
+                maxOutputTokens: 2048,
+                temperature: 0.7,
+                ...(thinkingConfig ? { thinkingConfig } : {})
+              }
             }
           })
         });
