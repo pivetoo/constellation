@@ -96,9 +96,13 @@ export class SmartRouter {
 
     if (candidateAccounts.length === 0) {
       const resetMsg = resetTimes.length > 0
-        ? `\nHorários previstos para reset:\n${resetTimes.map(r => `  - ${r.email}: ${r.resetTimeFormatted}`).join('\n')}`
+        ? `\nHorários previstos para reset do ${targetModel}:\n${resetTimes.map(r => `  • ${r.email}: ${r.resetTimeFormatted}`).join('\n')}`
         : '';
-      throw new Error(`Todas as contas disponíveis atingiram o limite ou estão em cooldown para o modelo "${targetModel}".${resetMsg}`);
+      const isClaude = targetModel.includes('opus') || targetModel.includes('sonnet') || targetModel.includes('claude');
+      const hint = isClaude
+        ? `\n\n💡 Dica: O Google One possui limites de cota mais restritos para modelos Claude (3P). Seus modelos Gemini 3.1 Pro e Gemini 3.8 Flash continuam com cota livre! Você pode alternar o modelo ativo pelo Dashboard em http://localhost:6012`
+        : '';
+      throw new Error(`Todas as contas disponíveis atingiram o limite ou estão em cooldown para o modelo "${targetModel}".${resetMsg}${hint}`);
     }
 
     // Ordena da conta com MAIOR cota restante para a de menor cota

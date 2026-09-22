@@ -594,23 +594,47 @@
           { match: (k) => k.includes('claude-sonnet'), name: '🖋️ Claude Sonnet 4.6' }
         ];
 
+        let readyModelsCount = 0;
+        let totalModelsChecked = 0;
+        let isGeminiReady = false;
+
         const modelsHtml = TARGET_MODELS.map(target => {
+          totalModelsChecked++;
           const foundKey = Object.keys(models).find(k => target.match(k));
           const q = foundKey ? models[foundKey] : { remainingPercent: 100, usagePercent: 0 };
 
-          if (q.inCooldown) isAnyCooldown = true;
-          if (q.isSoftQuotaExceeded) isAnyExhausted = true;
+          const isModelCooldown = Boolean(q.inCooldown);
+          const isModelExhausted = Boolean(q.isSoftQuotaExceeded || (q.remainingPercent !== undefined && q.remainingPercent <= 5));
+          const isModelAvailable = !isModelCooldown && !isModelExhausted;
+
+          if (isModelCooldown) isAnyCooldown = true;
+          if (isModelExhausted) isAnyExhausted = true;
+          if (isModelAvailable) {
+            readyModelsCount++;
+            if (target.name.includes('Gemini')) isGeminiReady = true;
+          }
 
           const rem = q.remainingPercent ?? 100;
           let fillClass = 'fill-healthy';
-          if (rem <= 10) fillClass = 'fill-danger';
-          else if (rem <= 30) fillClass = 'fill-warning';
+          let percentLabel = `${rem}% livre`;
+
+          if (isModelCooldown) {
+            fillClass = 'fill-danger';
+            percentLabel = `<span style="color: var(--cooldown); font-weight: 600;">${rem}% [Cooldown]</span>`;
+          } else if (isModelExhausted) {
+            fillClass = 'fill-danger';
+            percentLabel = `<span style="color: var(--danger); font-weight: 600;">${rem}% [Esgotado]</span>`;
+          } else if (rem <= 10) {
+            fillClass = 'fill-danger';
+          } else if (rem <= 30) {
+            fillClass = 'fill-warning';
+          }
 
           return `
             <div class="model-quota">
               <div class="model-label">
                 <span class="model-name">${target.name}</span>
-                <span class="model-percent">${rem}% livre</span>
+                <span class="model-percent">${percentLabel}</span>
               </div>
               <div class="progress-bar-bg">
                 <div class="progress-bar-fill ${fillClass}" style="width: ${rem}%;"></div>
@@ -632,15 +656,20 @@
           pillText = 'Requer Verificação';
           pillClass = 'exhausted';
           cooldownCount++;
+        } else if (readyModelsCount === 0) {
+          cardClass = 'cooldown';
+          pillText = 'Esgotada';
+          pillClass = 'exhausted';
+          cooldownCount++;
+        } else if (isGeminiReady && (isAnyCooldown || isAnyExhausted)) {
+          cardClass = 'healthy';
+          pillText = 'Pronta (Gemini)';
+          pillClass = 'ready';
+          readyCount++;
         } else if (isAnyCooldown) {
           cardClass = 'cooldown';
           pillText = 'Cooldown';
           pillClass = 'cooldown';
-          cooldownCount++;
-        } else if (isAnyExhausted) {
-          cardClass = 'cooldown';
-          pillText = 'Cota 95%';
-          pillClass = 'exhausted';
           cooldownCount++;
         } else {
           readyCount++;
