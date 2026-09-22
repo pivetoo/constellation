@@ -156,9 +156,9 @@ program
       const result = await smartRouter.executeWithFailover(model, async (account, resolvedModel) => {
         let actualGoogleModel = resolvedModel;
         if (resolvedModel.includes('gemini-3.1-pro') || resolvedModel.includes('gemini-pro')) {
-          actualGoogleModel = 'gemini-pro-agent';
+          actualGoogleModel = 'gemini-3.1-pro-high';
         } else if (resolvedModel.includes('gemini-3.8-flash') || resolvedModel.includes('gemini-3-flash') || resolvedModel.includes('gemini-flash')) {
-          actualGoogleModel = 'gemini-3.6-flash-high';
+          actualGoogleModel = 'gemini-3.8-flash-tiered';
         } else if (resolvedModel.includes('claude-opus') || resolvedModel.includes('opus')) {
           actualGoogleModel = 'claude-opus-4-6-thinking';
         } else if (resolvedModel.includes('claude-sonnet') || resolvedModel.includes('sonnet')) {
@@ -168,7 +168,7 @@ program
         let thinkingConfig = undefined;
         if (actualGoogleModel.includes('opus') || actualGoogleModel.includes('thinking')) {
           thinkingConfig = { includeThoughts: true, thinkingBudget: 1024 };
-        } else if (actualGoogleModel.includes('gemini-pro') || actualGoogleModel.includes('gemini-3.6') || actualGoogleModel.includes('agent')) {
+        } else if (actualGoogleModel.includes('gemini-pro') || actualGoogleModel.includes('gemini-3.8') || actualGoogleModel.includes('gemini-3.6') || actualGoogleModel.includes('agent')) {
           thinkingConfig = { includeThoughts: true, thinkingLevel: 'high' };
         }
 

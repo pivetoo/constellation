@@ -66,13 +66,15 @@ export class QuotaMonitor {
       }
 
       // Mapeamento de equivalência para os 4 modelos principais
-      if (result['gemini-pro-agent']) {
-        result['gemini-3.1-pro-high'] = { ...result['gemini-pro-agent'] };
-        result['gemini-3.1-pro'] = { ...result['gemini-pro-agent'] };
+      if (result['gemini-3.1-pro-high'] || result['gemini-pro-agent']) {
+        const proRef = result['gemini-3.1-pro-high'] || result['gemini-pro-agent'];
+        result['gemini-3.1-pro-high'] = { ...proRef };
+        result['gemini-3.1-pro'] = { ...proRef };
       }
-      if (result['gemini-3.6-flash-high'] || result['gemini-3.8-flash-tiered']) {
-        const flashRef = result['gemini-3.6-flash-high'] || result['gemini-3.8-flash-tiered'];
+      if (result['gemini-3.8-flash-tiered'] || result['gemini-3.6-flash-high']) {
+        const flashRef = result['gemini-3.8-flash-tiered'] || result['gemini-3.6-flash-high'];
         result['gemini-3.8-flash'] = { ...flashRef };
+        result['gemini-3.8-flash-tiered'] = { ...flashRef };
         result['gemini-3-flash'] = { ...flashRef };
       }
 

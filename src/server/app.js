@@ -227,7 +227,7 @@ export function createServer() {
       );
 
 function resolveActualGoogleModel(model) {
-  if (!model) return 'gemini-pro-agent';
+  if (!model) return 'gemini-3.1-pro-high';
   const clean = model.toLowerCase();
   if (clean.includes('claude-opus') || clean.includes('opus')) {
     return 'claude-opus-4-6-thinking';
@@ -236,10 +236,10 @@ function resolveActualGoogleModel(model) {
     return 'claude-sonnet-4-6';
   }
   if (clean.includes('gemini-3.8-flash') || clean.includes('gemini-3-flash') || clean.includes('gemini-flash') || clean.includes('haiku')) {
-    return 'gemini-3.6-flash-high';
+    return 'gemini-3.8-flash-tiered';
   }
   if (clean.includes('gemini-3.1-pro') || clean.includes('gemini-pro') || clean.includes('gemini')) {
-    return 'gemini-pro-agent';
+    return 'gemini-3.1-pro-high';
   }
   return model;
 }
@@ -251,7 +251,7 @@ function buildThinkingConfig(actualModel, requestedThinking) {
   if (actualModel.includes('opus') || actualModel.includes('thinking')) {
     return { includeThoughts: true, thinkingBudget: requestedThinking?.budget_tokens || 1024 };
   }
-  if (actualModel.includes('gemini-pro') || actualModel.includes('gemini-3.6') || actualModel.includes('agent')) {
+  if (actualModel.includes('gemini-pro') || actualModel.includes('gemini-3.8') || actualModel.includes('gemini-3.6') || actualModel.includes('agent')) {
     return { includeThoughts: true, thinkingLevel: 'high' };
   }
   return undefined;
