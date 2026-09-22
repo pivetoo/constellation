@@ -63,6 +63,14 @@ function cleanSchema(obj, isPropertiesMap = false) {
       cleaned.required = cleaned.required.filter(k => Object.prototype.hasOwnProperty.call(cleaned.properties, k));
       if (cleaned.required.length === 0) delete cleaned.required;
     }
+
+    if (cleaned.type === 'NULL') {
+      cleaned.type = 'STRING';
+    }
+
+    if (cleaned.enum && Array.isArray(cleaned.enum)) {
+      cleaned.enum = cleaned.enum.filter(e => e !== null && e !== undefined).map(String);
+    }
   }
 
   return cleaned;
@@ -95,6 +103,11 @@ function fixArrayItemsRecursively(schema) {
 }
 
 /**
+ * Mapeamento reverso de nomes de ferramentas sanitizados para os nomes originais da Anthropic / MCP
+ */
+export const toolNameMap = new Map();
+
+/**
  * Converte a lista de ferramentas do Claude Code em declarações de função do Gemini
  */
 export function convertAnthropicToolsToGemini(tools) {
@@ -115,8 +128,12 @@ export function convertAnthropicToolsToGemini(tools) {
         // Garante que arrays não tenham items ausentes
         fixArrayItemsRecursively(schema);
 
+        // Sanitiza o nome para o padrão estrito do Gemini (apenas letras, números, _ e -)
+        const sanitizedName = tool.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+        toolNameMap.set(sanitizedName, tool.name);
+
         return {
-          name: tool.name,
+          name: sanitizedName,
           description: tool.description || '',
           parameters: schema
         };

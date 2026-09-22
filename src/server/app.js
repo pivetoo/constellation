@@ -227,7 +227,7 @@ export function createServer() {
       );
 
 function resolveActualGoogleModel(model) {
-  if (!model) return 'gemini-3.1-pro-high';
+  if (!model) return 'gemini-3.8-flash-tiered';
   const clean = model.toLowerCase();
   if (clean.includes('claude-opus') || clean.includes('opus')) {
     return 'claude-opus-4-6-thinking';
@@ -239,7 +239,7 @@ function resolveActualGoogleModel(model) {
     return 'gemini-3.8-flash-tiered';
   }
   if (clean.includes('gemini-3.1-pro') || clean.includes('gemini-pro') || clean.includes('gemini')) {
-    return 'gemini-3.1-pro-high';
+    return 'gemini-pro-agent';
   }
   return model;
 }
@@ -279,6 +279,18 @@ async function callGoogleCodeAssist(account, requestBody) {
       });
       if (res.ok) return res;
       const errText = await res.text();
+      console.error(chalk.red(`[Google Error Details] Endpoint: ${ep}\nStatus: ${res.status}\nResponse: ${errText}`));
+      try {
+        const fs = await import('fs/promises');
+        const logsDir = path.resolve(__dirname, '../../logs');
+        await fs.mkdir(logsDir, { recursive: true });
+        await fs.writeFile(path.join(logsDir, 'last_error_details.json'), JSON.stringify({
+          endpoint: ep,
+          status: res.status,
+          error: errText,
+          requestBody
+        }, null, 2));
+      } catch {}
       lastError = new Error(`Google HTTP ${res.status}: ${errText}`);
       if (res.status === 404 || res.status >= 500) continue;
       throw lastError;
@@ -294,9 +306,13 @@ async function callGoogleCodeAssist(account, requestBody) {
       await smartRouter.executeWithFailover(targetModel, async (account, resolvedModel) => {
         const actualGoogleModel = resolveActualGoogleModel(resolvedModel);
         const thinkingConfig = buildThinkingConfig(actualGoogleModel, requestedThinking);
-        const finalMaxTokens = thinkingConfig?.thinkingBudget
+        
+        // Google Cloud Code rejeita estritamente tokens acima de 64000 (Claude) ou 65536 (Gemini) com HTTP 400
+        const maxTokensLimit = actualGoogleModel.includes('claude') ? 64000 : 65536;
+        const rawMaxTokens = thinkingConfig?.thinkingBudget
           ? Math.max(max_tokens || 8192, 4096)
           : (max_tokens || 8192);
+        const finalMaxTokens = Math.min(rawMaxTokens, maxTokensLimit);
 
         const projectId = account.projectId || API_ENDPOINTS.DEFAULT_PROJECT_ID;
         const requestBody = {

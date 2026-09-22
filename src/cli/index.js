@@ -156,7 +156,7 @@ program
       const result = await smartRouter.executeWithFailover(model, async (account, resolvedModel) => {
         let actualGoogleModel = resolvedModel;
         if (resolvedModel.includes('gemini-3.1-pro') || resolvedModel.includes('gemini-pro')) {
-          actualGoogleModel = 'gemini-3.1-pro-high';
+          actualGoogleModel = 'gemini-pro-agent';
         } else if (resolvedModel.includes('gemini-3.8-flash') || resolvedModel.includes('gemini-3-flash') || resolvedModel.includes('gemini-flash')) {
           actualGoogleModel = 'gemini-3.8-flash-tiered';
         } else if (resolvedModel.includes('claude-opus') || resolvedModel.includes('opus')) {

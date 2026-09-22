@@ -30,46 +30,65 @@ export function convertAnthropicMessagesToGemini(messages) {
     const parts = [];
 
     if (typeof msg.content === 'string') {
-      parts.push({ text: msg.content });
+      if (msg.content.trim().length > 0) {
+        parts.push({ text: msg.content });
+      }
     } else if (Array.isArray(msg.content)) {
       for (const block of msg.content) {
         if (!block) continue;
 
         if (block.type === 'text') {
-          parts.push({ text: block.text });
+          if (block.text && block.text.trim().length > 0) {
+            parts.push({ text: block.text });
+          }
         } else if (block.type === 'thinking') {
           if (block.thinking) parts.push({ text: block.thinking, thought: true });
         } else if (block.type === 'tool_use') {
-          toolIdToName[block.id] = block.name;
+          const rawName = block.name || 'tool';
+          const sanitizedName = rawName.replace(/[^a-zA-Z0-9_-]/g, '_');
+          toolIdToName[block.id] = sanitizedName;
+
           const sig = thoughtSignatureStore.get(block.id) ||
                       thoughtSignatureStore.get(block.name) ||
+                      thoughtSignatureStore.get(sanitizedName) ||
                       'skip_thought_signature_validator';
 
           parts.push({
             functionCall: {
-              id: block.id,
-              name: block.name,
+              name: sanitizedName,
               args: block.input || {}
             },
-            thoughtSignature: sig,
-            thought_signature: sig
+            thoughtSignature: sig
           });
         } else if (block.type === 'tool_result') {
-          const funcName = toolIdToName[block.tool_use_id] || block.name || 'tool_response';
-          const resultStr = typeof block.content === 'string'
-            ? block.content
-            : JSON.stringify(block.content);
+          const funcName = toolIdToName[block.tool_use_id] || (block.name ? block.name.replace(/[^a-zA-Z0-9_-]/g, '_') : 'tool_response');
+          let resultStr = '';
+          if (typeof block.content === 'string') {
+            resultStr = block.content;
+          } else if (Array.isArray(block.content)) {
+            resultStr = block.content.map(b => b.text || JSON.stringify(b)).join('\n');
+          } else if (block.content) {
+            resultStr = JSON.stringify(block.content);
+          }
 
           parts.push({
             functionResponse: {
-              id: block.tool_use_id,
               name: funcName,
               response: {
                 name: funcName,
-                content: resultStr
+                content: resultStr || 'OK'
               }
             }
           });
+        } else if (block.type === 'image') {
+          if (block.source && block.source.type === 'base64') {
+            parts.push({
+              inlineData: {
+                mimeType: block.source.media_type || 'image/jpeg',
+                data: block.source.data
+              }
+            });
+          }
         }
       }
     }
@@ -78,6 +97,11 @@ export function convertAnthropicMessagesToGemini(messages) {
     if (parts.length > 0) {
       conversationParts.push({ role: mappedRole, parts });
     }
+  }
+
+  // Garantir que a conversa sempre inicie com mensagem do usuário
+  if (conversationParts.length > 0 && conversationParts[0].role !== 'user') {
+    conversationParts.unshift({ role: 'user', parts: [{ text: 'Hello' }] });
   }
 
   return mergeConsecutiveRoles(conversationParts);
@@ -115,12 +139,10 @@ export function convertOpenAIMessagesToGemini(messages) {
         }
         parts.push({
           functionCall: {
-            id: tc.id,
             name: tc.function.name,
             args
           },
-          thoughtSignature: 'skip_thought_signature_validator',
-          thought_signature: 'skip_thought_signature_validator'
+          thoughtSignature: 'skip_thought_signature_validator'
         });
       }
     }
@@ -128,9 +150,11 @@ export function convertOpenAIMessagesToGemini(messages) {
     if (msg.role === 'tool') {
       parts.push({
         functionResponse: {
-          id: msg.tool_call_id,
           name: msg.name || 'tool',
-          response: { content: msg.content }
+          response: {
+            name: msg.name || 'tool',
+            content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
+          }
         }
       });
     }
@@ -139,6 +163,11 @@ export function convertOpenAIMessagesToGemini(messages) {
     if (parts.length > 0) {
       conversationParts.push({ role: mappedRole, parts });
     }
+  }
+
+  // Garantir que a conversa sempre inicie com mensagem do usuário
+  if (conversationParts.length > 0 && conversationParts[0].role !== 'user') {
+    conversationParts.unshift({ role: 'user', parts: [{ text: 'Hello' }] });
   }
 
   return {

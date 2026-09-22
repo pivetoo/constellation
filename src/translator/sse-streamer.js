@@ -3,6 +3,7 @@
  */
 
 import { thoughtSignatureStore } from './message-converter.js';
+import { toolNameMap } from './tool-converter.js';
 
 /**
  * Transmite o stream do Google no formato Anthropic SSE (usado pelo Claude Code)
@@ -91,7 +92,8 @@ export async function streamAnthropicResponse(googleReadableStream, res, modelNa
             })}\n\n`);
           } else if (part.functionCall) {
             // Processa chamada de ferramenta (tool use)
-            const funcName = part.functionCall.name;
+            const rawFuncName = part.functionCall.name;
+            const funcName = toolNameMap.get(rawFuncName) || rawFuncName;
             const argsObj = part.functionCall.args || {};
             const argsStr = JSON.stringify(argsObj);
             const toolId = part.functionCall.id || `toolu_${Date.now()}_${Math.random().toString(36).substring(7)}`;
@@ -100,6 +102,7 @@ export async function streamAnthropicResponse(googleReadableStream, res, modelNa
             if (sig) {
               thoughtSignatureStore.set(toolId, sig);
               thoughtSignatureStore.set(funcName, sig);
+              thoughtSignatureStore.set(rawFuncName, sig);
             }
 
             collectedTools.push({ type: 'tool_use', id: toolId, name: funcName, input: argsObj });
